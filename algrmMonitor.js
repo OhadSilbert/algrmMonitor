@@ -23,10 +23,17 @@ function gpuPanel(gpu) {
 		html += '<table id="gpuProcessTable_' + this.gpu.internalIndex + '" class="gpu-process-table">';
 		html += '<tr><th>PID</th><th>Process</th><th>Mem Usage [MB]</th></tr>';
 		for (i in gpuInfo.procs) {
+			var usedGpuMemoryPercent = 100*gpuInfo.procs[i].usedGpuMemory/gpuInfo.memTotal + '%';
+			var usedGpuMemory = gpuInfo.procs[i].usedGpuMemory/1024/1024 + ' (' + usedGpuMemoryPercent + '%)';
+			if (gpuInfo.procs[i].usedGpuMemory<0) {
+				usedGpuMemory = "?";
+			}
+			else {
+			}
 			html += '<tr>';
 			html += '<td>' + gpuInfo.procs[i].pid + '</td>';
 			html += '<td>' + gpuInfo.procs[i].cmd + '</td>';
-			html += '<td>' + gpuInfo.procs[i].usedGpuMemory/1024/1024 + '</td>';
+			html += '<td>' + usedGpuMemory + '</td>';
 			html += '</tr>';
 		}
 		html += '</table>';
