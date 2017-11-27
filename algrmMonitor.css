@@ -1,10 +1,12 @@
 
 .gpu-panel {
+	float: left;
 	margin: 14px;
 	border: 1px solid blue;
 	padding: 5px;
 	width: 400px;
 	height: 600px;
+	background-color: #a0a0ff
 }
 
 
@@ -25,7 +27,9 @@
     padding: 8px;
 }
 
-.gpu-process-table tr:nth-child(even){background-color: #f2f2f2;}
+.gpu-process-table tr {
+	background-color: #f2f2f2;
+}
 
 .gpu-process-table tr:hover {background-color: #ddd;}
 

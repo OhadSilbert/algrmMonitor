@@ -38,6 +38,7 @@ function gpuPanel(gpu) {
 		xhttp.panel = this;
 		xhttp.onreadystatechange = function() {
 			if (this.readyState == 4 && this.status == 200) {
+				// if panel was freezed, unfreeze.
 				var gpuInfo = JSON.parse(this.responseText);
 				this.panel.updateGPUInfo(gpuInfo);
 			} else if ((this.readyState == 4 && this.status == 0) || this.status >= 400) {
@@ -69,9 +70,11 @@ function constructGPUPanels(gpus) {
 		panels[i].render();
 	}
 	
-	for (i in panels) {
-		panels[i].refresh();
-	}
+	setInterval(function() {
+		for (i in panels) {
+			panels[i].refresh();
+		}
+	}, 1000);
 }
 
 
