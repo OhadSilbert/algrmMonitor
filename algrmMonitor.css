@@ -1,0 +1,38 @@
+
+.gpu-panel {
+	margin: 14px;
+	border: 1px solid blue;
+	padding: 5px;
+	width: 400px;
+	height: 600px;
+}
+
+
+.gpu-panel .gpu-title {
+	text-align: center;
+	color: blue;
+	font-size: 20px;
+}
+
+.gpu-process-table {
+    font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
+    border-collapse: collapse;
+    width: 100%;
+}
+
+.gpu-process-table td, .gpu-process-table th {
+    border: 1px solid #ddd;
+    padding: 8px;
+}
+
+.gpu-process-table tr:nth-child(even){background-color: #f2f2f2;}
+
+.gpu-process-table tr:hover {background-color: #ddd;}
+
+.gpu-process-table th {
+    padding-top: 12px;
+    padding-bottom: 12px;
+    text-align: left;
+    background-color: #6495ED;
+    color: white;
+}
