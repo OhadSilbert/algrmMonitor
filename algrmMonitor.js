@@ -1,6 +1,48 @@
 (function() {
 	var algrmServerURL = "/monitor";
+	
+	var iPromiseStates = {
+		"limbo" : 0,
+		"rejected" : 1,
+		"accepted" : 2
+	}
 
+	function iPromise() {
+		this.state = iPromiseStates.limbo;
+	}
+	
+	iPromise.prototype.setReject = function() {
+		this.state = iPromiseStates.rejected;
+	}
+
+	iPromise.prototype.setAccept = function() {
+		this.state = iPromiseStates.accepted;
+	}
+	
+	iPromise.prototype.then = function(acceptFunc) {
+		this.acceptFunc = acceptFunc;
+		return this;
+	}
+	
+	iPromise.prototype.reject = function(rejectFunc) {
+		this.rejectFunc = rejectFunc;
+		return this;
+	}
+	
+	iPromise.prototype.keepPromise = function() {
+		if (this.state == iPromiseStates.accepted) {
+			if (this.acceptFunc != null) {
+				this.acceptFunc();
+			}
+		}
+		else if (this.state == iPromiseStates.rejected) {
+			if (this.rejectFunc != null) {
+				this.rejectFunc();
+			}
+		}
+		this.state = iPromiseStates.limbo;
+	}
+	
 
 	function gpuPanel(gpu) {
 		this.gpu = gpu;
@@ -40,22 +82,27 @@
 
 	gpuPanel.prototype.refresh = function() {
 		var xhttp = new XMLHttpRequest();
+		var refreshPromise = new iPromise();
 		xhttp.panel = this;
 		xhttp.onreadystatechange = function() {
 			if (this.readyState == 4 && this.status == 200) {
 				// if panel was freezed, unfreeze.
 				var gpuInfo = JSON.parse(this.responseText);
 				this.panel.updateGPUInfo(gpuInfo);
+				refreshPromise.setAccept();
 			} else if ((this.readyState == 4 && this.status == 0) || this.status >= 400) {
 				console.log("failed to get GPU info: algrm server is not responding");
+				refreshPromise.setReject();
 				// Should indicate panel is freeze
 			}
+			refreshPromise.keepPromise();
 		} ;
 		var url = "<url>/GPUs?gpuIdx=<gpuIdx>"
 		.replace("<url>", algrmServerURL)
 		.replace("<gpuIdx>", this.gpu.gpuIdx);
 		xhttp.open("GET", url, true);
 		xhttp.send();
+		return refreshPromise;
 	}
 
 
@@ -76,9 +123,21 @@
 			panels[i].render();
 		}
 		
-		setInterval(function() {
+		var refreshId = setInterval(function() {
 			for (var i in panels) {
-				panels[i].refresh();
+				panels[i].refresh()
+				.then(function() {
+					var tableElements = document.getElementsByClassName("gpu-process-table-freeze");
+					for (var i = 0; i < tableElements.length; i++) {
+						tableElements[i].className = "gpu-process-table";
+					}
+				})
+				.reject(function() {
+					var tableElements = document.getElementsByClassName("gpu-process-table");
+					for (var i = 0; i < tableElements.length; i++) {
+						tableElements[i].className = "gpu-process-table gpu-process-table-freeze";
+					}
+				});
 			}
 		}, 1000);
 	}

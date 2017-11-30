@@ -9,6 +9,10 @@
 	background-color: #a0a0ff
 }
 
+.gpu-process {
+	max-height: 400px;
+	overflow-y: auto;
+}
 
 .gpu-panel .gpu-title {
 	text-align: center;
@@ -39,4 +43,12 @@
     text-align: left;
     background-color: #6495ED;
     color: white;
+}
+
+.gpu-process-table-freeze th {
+    color: gray;
+}
+
+.gpu-process-table-freeze tr {
+    color: gray;
 }

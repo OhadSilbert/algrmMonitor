@@ -9,7 +9,7 @@ import time
 TIME_INTERVAL = 1
 
 
-SIMULATE_CUDA = True
+SIMULATE_CUDA = False
 if not SIMULATE_CUDA:
     from py3nvml.py3nvml import *
 
@@ -72,7 +72,7 @@ def main():
             devices_history.append(History())
         t = threading.Thread(name='monitor-daemon', target=monitor_daemon, daemon=True )
         t.start()
-    app.run(port=args.port)
+    app.run(port=args.port, host='0.0.0.0')
 
 
 def monitor_all_gpus():
