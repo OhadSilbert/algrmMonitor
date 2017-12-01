@@ -1,4 +1,7 @@
 (function() {
+	
+	$(document).ready(function() { buildAlgrmDashboard(algrmServerURL); });
+	
 	var algrmServerURL = "/monitor";
 	
 	var iPromiseStates = {
@@ -56,7 +59,7 @@
 		.replace(/<id>/g, this.gpu.internalIndex)
 		.replace('<gpuName>', this.gpu.gpuName)
 		.replace('<gpuIdx>', this.gpu.gpuIdx);
-		document.getElementById("gpuPanel_<id>".replace(/<id>/g, this.gpu.internalIndex)).innerHTML = html;
+		$("#gpuPanel_" + this.gpu.internalIndex).html(html);
 	}
 		
 	gpuPanel.prototype.updateGPUInfo = function(gpuInfo) {
@@ -77,7 +80,7 @@
 			.replace('<mem>', usedGpuMemory);
 		}
 		html = html.replace('<tablebody>', tablebody);
-		document.getElementById("gpuProcessPanel_<id>".replace(/<id>/g, this.gpu.internalIndex)).innerHTML = html;
+		$("#gpuProcessPanel_" + this.gpu.internalIndex).html(html);
 	}
 
 	gpuPanel.prototype.refresh = function() {
@@ -117,7 +120,7 @@
 			var panel = new gpuPanel(gpu);
 			panels[i] = panel;
 		}
-		document.getElementById("algrmDashboard").innerHTML = html;
+		$("#algrmDashboard").html(html);
 		
 		for (var i in panels) {
 			panels[i].render();
@@ -127,16 +130,10 @@
 			for (var i in panels) {
 				panels[i].refresh()
 				.then(function() {
-					var tableElements = document.getElementsByClassName("gpu-process-table-freeze");
-					for (var i = 0; i < tableElements.length; i++) {
-						tableElements[i].className = "gpu-process-table";
-					}
+					$(".gpu-process-table-freeze").removeClass("gpu-process-table-freeze");
 				})
 				.reject(function() {
-					var tableElements = document.getElementsByClassName("gpu-process-table");
-					for (var i = 0; i < tableElements.length; i++) {
-						tableElements[i].className = "gpu-process-table gpu-process-table-freeze";
-					}
+					$(".gpu-process-table").addClass("gpu-process-table-freeze");
 				});
 			}
 		}, 1000);
@@ -152,8 +149,7 @@
 				constructGPUPanels(gpus);
 			} else if ((this.readyState == 4 && this.status == 0) ||this.status >= 400) {
 				console.log("failed to load GPUs: algrm server is not responding");
-				document.getElementById("algrmDashboard").innerHTML = 
-					"<div class='errorAlgrmLine'>R.I.P.<BR>algrm is dead</div>";
+				$("#algrmDashboard").html("<div class='errorAlgrmLine'>R.I.P.<BR>algrm is dead</div>");
 			}
 		} ;
 		var url = "<url>/GPUs".replace("<url>", algrmServerURL);
@@ -161,6 +157,4 @@
 		xhttp.send();
 	}
 
-
-	buildAlgrmDashboard(algrmServerURL);
 })();
