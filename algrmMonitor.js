@@ -138,9 +138,11 @@
 			htmlPanelStructure: '<h1 id="<gpuPanelTitleId>" class="gpu-title"><gpuName> (<gpuIdx>)</h1> \
 								 <div id="<gpuUtilGraphPanelId>"  class="gpu-graph"></div> \
 								 <div id="<gpuMemGraphPanelId>"  class="gpu-graph"></div> \
-								 <div id="<gpuProcessPanelId>"  class="gpu-process"></div>',
-			htmlProcessTable: '<table id="<gpuProcessTableId>" class="gpu-process-table">\
-							   <tr><th>PID</th><th>Process</th><th>User</th><th>Mem Usage [MB]</th></tr><tablebody></table>',
+								 <div id="<gpuProcessPanelId>"  class="gpu-process"> \
+								 <table id="<gpuProcessTableId>" class="gpu-process-table">\
+								 <thead><tr><th>PID</th><th>Process</th><th>User</th><th>Mem Usage [MB]</th></tr></thead>\
+								 <tbody></tbody></table>\
+								 </div>',
 			htmlProcessTableRow: '<tr><td><pid></td><td><cmd></td><td><username></td><td><mem></td></tr>'
 		},
 		
@@ -161,24 +163,25 @@
 			this.gpuUtilGraphPanelId = this.strs.gpuUtilGraphPanelId.replace("<id>", this.model.id);
 			this.gpuMemGraphPanelId = this.strs.gpuMemGraphPanelId.replace("<id>", this.model.id);
 			this.gpuProcessPanelId = this.strs.gpuProcessPanelId.replace("<id>", this.model.id);
+			this.gpuProcessTableId = this.strs.gpuProcessTableId.replace("<id>", this.model.id);
 			var html = this.strs.htmlPanelStructure
 				.replace("<gpuPanelTitleId>", this.gpuPanelTitleId)
 				.replace("<gpuUtilGraphPanelId>", this.gpuUtilGraphPanelId)
 				.replace("<gpuMemGraphPanelId>", this.gpuMemGraphPanelId)
 				.replace("<gpuProcessPanelId>", this.gpuProcessPanelId)
 				.replace("<gpuName>", this.model.getGPUInfo().gpuName)
-				.replace('<gpuIdx>', this.model.getGPUInfo().gpuIdx);
+				.replace('<gpuIdx>', this.model.getGPUInfo().gpuIdx)
+				.replace("<gpuProcessTableId>", this.gpuProcessTableId);
 			this.$gpuPanel.html(html);
 			this.$gpuUtilGraphPanel = $("#" + this.gpuUtilGraphPanelId);
 			this.$gpuMemGraphPanel = $("#" + this.gpuMemGraphPanelId);
 			this.$gpuProcessPanel = $("#" + this.gpuProcessPanelId);
+			this.$gpuProcessTable = $("#" + this.gpuProcessTableId + " tbody");
 		},
 		
 		buildProcessTable: function() {
-			this.gpuProcessTableId = this.strs.gpuProcessTableId.replace("<id>", this.model.id);
-			var html = this.strs.htmlProcessTable.replace("<gpuProcessTableId>", this.gpuProcessTableId);
-			var tablebody = '';
 			var gpuDetails = this.model.getGPUDetails();
+			var tablebody = "";
 			for (var i in this.model.gpuDetails.procs) {
 				var proc = this.model.getGPUDetails().procs[i];
 				var usedGpuMemoryPercent = 100*proc.usedGpuMemory/gpuDetails.memTotal;
@@ -192,8 +195,7 @@
 					.replace('<username>', proc.username)
 					.replace('<mem>', usedGpuMemory);
 			}
-			html = html.replace('<tablebody>', tablebody);
-			this.$gpuProcessPanel.html(html);
+			this.$gpuProcessTable.html(tablebody);
 		},
 
 		updateOnlineStatus: function() {
