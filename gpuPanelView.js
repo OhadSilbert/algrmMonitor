@@ -68,10 +68,16 @@ var algrmMonitor = algrmMonitor || {};
 			gpuMemGraphPanelId: "gpuMemGraphPanel_<id>",
 			gpuProcessPanelId: "gpuProcessPanel_<id>",
 			gpuProcessTableId: "gpuProcessTable_<id>",
+			gpuUtilGraphSVGId: "gpuUtilGraphSVG_<id>",
+			gpuMemGraphSVGId: "gpuMemGraphSVG_<id>",
 			htmlPanel: '<div id="<gpuPanelId>" class="gpu-panel"></div>',
 			htmlPanelStructure: '<h1 id="<gpuPanelTitleId>" class="gpu-title"><gpuName> (<gpuIdx>)</h1> \
-								 <div id="<gpuUtilGraphPanelId>"  class="gpu-graph"></div> \
-								 <div id="<gpuMemGraphPanelId>"  class="gpu-graph"></div> \
+								 <div id="<gpuUtilGraphPanelId>"  class="gpu-graph"> \
+								 <svg id="<gpuUtilGraphSVGId>" class="gpu-svg"></svg> \
+								 </div> \
+								 <div id="<gpuMemGraphPanelId>"  class="gpu-graph"> \
+								 <svg id="<gpuMemGraphSVGId>" class="gpu-svg"></svg> \
+								 </div> \
 								 <div id="<gpuProcessPanelId>"  class="gpu-process"> \
 								 <table id="<gpuProcessTableId>" class="gpu-process-table">\
 								 <thead><tr><th>PID</th><th>Process</th><th>User</th><th>Mem Usage [MB]</th></tr></thead>\
@@ -92,12 +98,31 @@ var algrmMonitor = algrmMonitor || {};
 			}
 		},
 		
+		buildSVG: function(svg) {
+			var margin = {top: 30, right: 20, bottom: 30, left: 50};
+			var width = 450 - margin.left - margin.right;
+			var height = 150 - margin.top - margin.bottom;
+			var x = d3.scale.linear().range([0, width]);
+			var y = d3.scale.linear().range([height, 0]);
+			x.domain([-60, 0]);
+			y.domain([0, 100]);
+			var xAxis = d3.svg.axis().scale(x)
+									 .orient("bottom").ticks(5);
+			var yAxis = d3.svg.axis().scale(y)
+									 .orient("left").ticks(5);
+			svg = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+			svg.append("g").attr("class", "x axis").attr("transform", "translate(0," + height + ")").call(xAxis);
+			svg.append("g").attr("class", "y axis").call(yAxis);
+		},
+		
 		buildPanelStructure: function() {
 			this.gpuPanelTitleId = this.strs.gpuPanelTitleId.replace("<id>", this.model.id);
 			this.gpuUtilGraphPanelId = this.strs.gpuUtilGraphPanelId.replace("<id>", this.model.id);
 			this.gpuMemGraphPanelId = this.strs.gpuMemGraphPanelId.replace("<id>", this.model.id);
 			this.gpuProcessPanelId = this.strs.gpuProcessPanelId.replace("<id>", this.model.id);
 			this.gpuProcessTableId = this.strs.gpuProcessTableId.replace("<id>", this.model.id);
+			this.gpuUtilGraphSVGId = this.strs.gpuUtilGraphSVGId.replace("<id>", this.model.id);
+			this.gpuMemGraphSVGId = this.strs.gpuMemGraphSVGId.replace("<id>", this.model.id);
 			var html = this.strs.htmlPanelStructure
 				.replace("<gpuPanelTitleId>", this.gpuPanelTitleId)
 				.replace("<gpuUtilGraphPanelId>", this.gpuUtilGraphPanelId)
@@ -105,12 +130,18 @@ var algrmMonitor = algrmMonitor || {};
 				.replace("<gpuProcessPanelId>", this.gpuProcessPanelId)
 				.replace("<gpuName>", this.model.getGPUInfo().gpuName)
 				.replace('<gpuIdx>', this.model.getGPUInfo().gpuIdx)
-				.replace("<gpuProcessTableId>", this.gpuProcessTableId);
+				.replace("<gpuProcessTableId>", this.gpuProcessTableId)
+				.replace("<gpuUtilGraphSVGId>", this.gpuUtilGraphSVGId)
+				.replace("<gpuMemGraphSVGId>", this.gpuMemGraphSVGId);
 			this.$gpuPanel.html(html);
 			this.$gpuUtilGraphPanel = $("#" + this.gpuUtilGraphPanelId);
 			this.$gpuMemGraphPanel = $("#" + this.gpuMemGraphPanelId);
 			this.$gpuProcessPanel = $("#" + this.gpuProcessPanelId);
 			this.$gpuProcessTable = $("#" + this.gpuProcessTableId + " tbody");
+			this.svgUtil = d3.select("#" + this.gpuUtilGraphSVGId);
+			this.svgMem = d3.select("#" + this.gpuMemGraphSVGId);
+			this.buildSVG(this.svgUtil);
+			this.buildSVG(this.svgMem);
 		},
 		
 		buildProcessTable: function() {

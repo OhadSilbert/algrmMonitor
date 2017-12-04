@@ -9,6 +9,40 @@
 	background-color: #a0a0ff
 }
 
+.gpu-graph {
+	width: 450px;
+	height: 180px;
+	display: block;
+	margin: auto;
+}
+
+.gpu-svg {
+	width: 450px;
+	height: 150px;
+	display: block;
+	margin: auto;
+	background-color: #050505
+}
+
+path { 
+    stroke: steelblue;
+    stroke-width: 2;
+    fill: none;
+}
+
+.axis path,
+.axis line {
+    fill: none;
+    stroke: #a0a0ff;
+    stroke-width: 1;
+    shape-rendering: crispEdges;
+}
+
+.axis text {
+	font: 12px Arial;
+	fill: #a0a0ff ;
+}
+
 .gpu-process {
 	max-height: 400px;
 	overflow-y: auto;
