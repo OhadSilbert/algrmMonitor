@@ -98,7 +98,7 @@ var algrmMonitor = algrmMonitor || {};
 			}
 		},
 		
-		buildSVG: function(svg) {
+		buildSVG: function(svg, title) {
 			var margin = {top: 30, right: 20, bottom: 30, left: 50};
 			var width = 450 - margin.left - margin.right;
 			var height = 150 - margin.top - margin.bottom;
@@ -111,8 +111,16 @@ var algrmMonitor = algrmMonitor || {};
 			var yAxis = d3.svg.axis().scale(y)
 									 .orient("left").ticks(5);
 			svg = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+			svg.append("text").attr("class", "graph-title")
+							  .attr("x", (width / 2))
+							  .attr("y", 0 - (margin.top / 2))
+							  .text(title);
+			svg.append("path").attr("class", "line");
 			svg.append("g").attr("class", "x axis").attr("transform", "translate(0," + height + ")").call(xAxis);
 			svg.append("g").attr("class", "y axis").call(yAxis);
+			svg.x = x;
+			svg.y = y;
+			return svg;
 		},
 		
 		buildPanelStructure: function() {
@@ -138,10 +146,8 @@ var algrmMonitor = algrmMonitor || {};
 			this.$gpuMemGraphPanel = $("#" + this.gpuMemGraphPanelId);
 			this.$gpuProcessPanel = $("#" + this.gpuProcessPanelId);
 			this.$gpuProcessTable = $("#" + this.gpuProcessTableId + " tbody");
-			this.svgUtil = d3.select("#" + this.gpuUtilGraphSVGId);
-			this.svgMem = d3.select("#" + this.gpuMemGraphSVGId);
-			this.buildSVG(this.svgUtil);
-			this.buildSVG(this.svgMem);
+			this.svgUtil = this.buildSVG(d3.select("#" + this.gpuUtilGraphSVGId), "Util");
+			this.svgMem = this.buildSVG(d3.select("#" + this.gpuMemGraphSVGId), "Memory");
 		},
 		
 		buildProcessTable: function() {
@@ -150,7 +156,7 @@ var algrmMonitor = algrmMonitor || {};
 			for (var i in this.model.gpuDetails.procs) {
 				var proc = this.model.getGPUDetails().procs[i];
 				var usedGpuMemoryPercent = 100*proc.usedGpuMemory/gpuDetails.memTotal;
-				var usedGpuMemory = proc.usedGpuMemory/1024/1024 + ' (' + usedGpuMemoryPercent + '%)';
+				var usedGpuMemory = proc.usedGpuMemory/1024/1024 + ' (' + usedGpuMemoryPercent.toFixed(0) + '%)';
 				if (proc.usedGpuMemory < 0) {
 					usedGpuMemory = "?";
 				}
@@ -161,6 +167,41 @@ var algrmMonitor = algrmMonitor || {};
 					.replace('<mem>', usedGpuMemory);
 			}
 			this.$gpuProcessTable.html(tablebody);
+		},
+		
+		updateSVGWithData(svg, data, x, y) {
+			var valueline = d3.svg.line().x(function(d) { return x(d[0]); }).y(function(d) { return y(d[1]); });
+			svg.select("path").attr("d", valueline(data));
+		},
+		
+		updateUtilGraph: function() {
+			var gtime = this.model.gpuDetails.graph_time;
+			var gutil = this.model.gpuDetails.graph_util;
+			var n = gtime.length;
+			var end_time = gtime[n - 1];
+			var data = [];
+			for (var i = 0; i < n; i++) {
+				var ltime = gtime[i] - end_time;
+				if (ltime > -60) {
+					data.push([ltime, gutil[i]]);
+				}
+			}
+			this.updateSVGWithData(this.svgUtil, data, this.svgUtil.x, this.svgUtil.y);
+		},
+
+		updateMemGraph: function() {
+			var gtime = this.model.gpuDetails.graph_time;
+			var gmem = this.model.gpuDetails.graph_mem;
+			var n = gtime.length;
+			var end_time = gtime[n - 1];
+			var data = [];
+			for (var i = 0; i < n; i++) {
+				var ltime = gtime[i] - end_time;
+				if (ltime > -60) {
+					data.push([ltime, gmem[i]]);
+				}
+			}
+			this.updateSVGWithData(this.svgMem, data, this.svgMem.x, this.svgMem.y);
 		},
 
 		updateOnlineStatus: function() {
@@ -183,6 +224,8 @@ var algrmMonitor = algrmMonitor || {};
 		
 		updateGPUDetails: function() {
 			this.buildProcessTable();
+			this.updateUtilGraph();
+			this.updateMemGraph();
 		}
 
 	};

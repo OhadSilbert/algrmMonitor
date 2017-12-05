@@ -6,20 +6,20 @@ import threading
 import time
 
 
-TIME_INTERVAL = 1
+TIME_INTERVAL = 0.04
 
 
 SIMULATE_CUDA = False
 if not SIMULATE_CUDA:
     from py3nvml.py3nvml import *
 
-app = Flask(__name__, static_folder='C:\\inetpub\\wwwroot\\ohad')
+app = Flask(__name__, static_folder='C:\\Users\\ohads\\Documents\\Repositories\\algrmMonitor\\')
 
 lock = threading.Lock()
 
 class History:
     def __init__(self):
-        self.MAX_TIME_POINTS = 60*60*24
+        self.MAX_TIME_POINTS = round(60/TIME_INTERVAL)
         self.time = list()
         self.util_history = list()
         self.mem_history = list()
@@ -53,8 +53,9 @@ def monitor_daemon():
         for i in range(device_count):
             handle = nvmlDeviceGetHandleByIndex(i)
             util = nvmlDeviceGetUtilizationRates(handle)
+            mem_info = nvmlDeviceGetMemoryInfo(handle)
             all_utils.append(util.gpu)
-            all_mems.append(util.memory)
+            all_mems.append(100*mem_info.used/mem_info.total)
         lock.acquire()
         for i in range(device_count):
             history = devices_history[i]
@@ -143,12 +144,15 @@ def monitor_device(gpu_idx):
             ret_json += '{'
             ret_json += f'"pid":{p.pid}, "usedGpuMemory":{usedGpuMemory}, "cmd":"{cmd}", "username":"{user_name}"'
             ret_json += '},'
-        ret_json = ret_json[:-1] + '],'
+        if ret_json[-1] == ',':
+            ret_json = ret_json[:-1] + '],'
+        else:
+            ret_json += '],'
         lock.acquire()
         history = devices_history[gpu_idx]
-        ret_json += f'"graph_time":{history.time[-600:]},'
-        ret_json += f'"graph_util":{history.util_history[-600:]},'
-        ret_json += f'"graph_mem":{history.mem_history[-600:]}'
+        ret_json += f'"graph_time":{history.time},'
+        ret_json += f'"graph_util":{history.util_history},'
+        ret_json += f'"graph_mem":{history.mem_history}'
         lock.release()
         ret_json += '}'
         return ret_json
