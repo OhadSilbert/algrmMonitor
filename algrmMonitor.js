@@ -39,6 +39,7 @@ var algrmMonitor = algrmMonitor || {};
 	}
 
 	algrmMonitor.buildAlgrmDashboard = function() {
+		$("title").text("Algrm Monitor : " + location.hostname);
 		$.getJSON(algrmServerURL)
 		.done( function(data) {
 			$("#algrmDashboard").empty();

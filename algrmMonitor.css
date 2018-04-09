@@ -1,12 +1,34 @@
+body {
+	font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
+	background-color: #f0f0f0;
+}
+
+body::after {
+  content: "";
+  background-color: #f0f0f0;
+  background-size: 100%;
+  opacity: 0.5;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  position: absolute;
+  z-index: -1;   
+}
+
+#algrmDashboard {
+	background-color: #f0f0f0;
+	display: flex;
+    justify-content: center;
+	flex-wrap: wrap;
+}
 
 .gpu-panel {
-	float: left;
 	margin: 14px;
-	border: 1px solid blue;
 	padding: 5px;
 	width: 500px;
 	height: 600px;
-	background-color: #a0a0ff
+	background-color: white;
 }
 
 .gpu-graph {
@@ -21,74 +43,113 @@
 	height: 150px;
 	display: block;
 	margin: auto;
-	background-color: #050505
 }
 
 .graph-title {
 	text-anchor: middle;
 	font-size: 16px;
-	fill: LightSkyBlue;
 }
 
-path { 
-    stroke: steelblue;
+.gpu-graph path { 
     stroke-width: 2;
     fill: none;
 }
 
-.axis path,
-.axis line {
+.gpu-graph .line-0 {
+	stroke: #9fa3df;
+	stroke-width: 2;
+	fill: none;
+}
+
+.gpu-graph .text-line-0 {
+	fill: #9fa3df;
+	font-size: small;
+	stroke: #9fa3df;
+}
+
+.gpu-graph .line-1 {
+	stroke: #9ccc9f;
+	stroke-width: 2;
+	fill: none;
+}
+
+.gpu-graph .text-line-1 {
+	fill: #9ccc9f;
+	font-size: small;
+	stroke: #9ccc9f;
+}
+
+.gpu-graph .axis path,
+.gpu-graph .axis line {
     fill: none;
-    stroke: #a0a0ff;
+    stroke: black;
     stroke-width: 1;
     shape-rendering: crispEdges;
 }
 
-.axis text {
+.gpu-graph .axis text {
 	font: 12px Arial;
-	fill: #a0a0ff ;
+	fill: black;
 }
 
 .gpu-process {
-	max-height: 400px;
+	max-height: 180px;
 	overflow-y: auto;
+	display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .gpu-panel .gpu-title {
 	text-align: center;
-	color: blue;
 	font-size: 20px;
+	margin: 25px;
 }
 
 .gpu-process-table {
-    font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
     border-collapse: collapse;
-    width: 100%;
+	border: 1px solid #ddd;
+    width: 450px;
 }
 
 .gpu-process-table td, .gpu-process-table th {
-    border: 1px solid #ddd;
     padding: 8px;
 }
 
 .gpu-process-table tr {
-	background-color: #f2f2f2;
+	background-color: white;
 }
 
-.gpu-process-table tr:hover {background-color: #ddd;}
+.gpu-process-table tr:hover {background-color: #f0f0f0;}
+
+thead {
+	border: 1px solid #ddd;
+}
 
 .gpu-process-table th {
+	font: bold;
     padding-top: 12px;
     padding-bottom: 12px;
     text-align: left;
-    background-color: #6495ED;
-    color: white;
+    background-color: white;
 }
 
 .gpu-process-table-freeze th {
-    color: gray;
+    color: #e0e0e0;
 }
 
 .gpu-process-table-freeze tr {
-    color: gray;
+    color: #e0e0e0;
+}
+
+.gpu-panel.tensorboard {
+	width: 1040px;
+	height: 800px;
+	padding: 10px;
+}
+
+
+iframe {
+	width: 100%;
+	height: 100%;
 }

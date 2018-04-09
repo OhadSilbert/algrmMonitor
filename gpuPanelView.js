@@ -14,6 +14,7 @@ var algrmMonitor = algrmMonitor || {};
 		this.model = model;
 		
 		// here should be event dispachers for events coming from the view
+		this.clickProcessTableRowEvent = new algrmMonitor.eventDispatcher(this);
 
 		this.init();
 	};
@@ -29,7 +30,7 @@ var algrmMonitor = algrmMonitor || {};
 			// cache the document object
 			this.$gpuPanel = null;
 			this.$gpuUtilGraphPanel = null;
-			this.$gpuMemGraphPanel = null;
+			this.$gpuXGraphPanel = null;
 			this.$gpuProcessPanel = null;
 			return this;
 		},
@@ -65,25 +66,31 @@ var algrmMonitor = algrmMonitor || {};
 			gpuPanelId: "gpuPanel_<id>",
 			gpuPanelTitleId: "gpuPanelTitle_<id>",
 			gpuUtilGraphPanelId: "gpuUtilGraphPanel_<id>",
-			gpuMemGraphPanelId: "gpuMemGraphPanel_<id>",
+			gpuXGraphPanelId: "gpuXGraphPanel_<id>",
 			gpuProcessPanelId: "gpuProcessPanel_<id>",
 			gpuProcessTableId: "gpuProcessTable_<id>",
 			gpuUtilGraphSVGId: "gpuUtilGraphSVG_<id>",
-			gpuMemGraphSVGId: "gpuMemGraphSVG_<id>",
+			gpuXGraphSVGId: "gpuXGraphSVG_<id>",
+			lineUtilTitle: "Util",
+			lineMemTitle: "Mem",
+			lineRxTitle: "rx",
+			lineTxTitle: "tx",
 			htmlPanel: '<div id="<gpuPanelId>" class="gpu-panel"></div>',
 			htmlPanelStructure: '<h1 id="<gpuPanelTitleId>" class="gpu-title"><gpuName> (<gpuIdx>)</h1> \
 								 <div id="<gpuUtilGraphPanelId>"  class="gpu-graph"> \
 								 <svg id="<gpuUtilGraphSVGId>" class="gpu-svg"></svg> \
 								 </div> \
-								 <div id="<gpuMemGraphPanelId>"  class="gpu-graph"> \
-								 <svg id="<gpuMemGraphSVGId>" class="gpu-svg"></svg> \
+								 <div id="<gpuXGraphPanelId>"  class="gpu-graph"> \
+								 <svg id="<gpuXGraphSVGId>" class="gpu-svg"></svg> \
 								 </div> \
 								 <div id="<gpuProcessPanelId>"  class="gpu-process"> \
 								 <table id="<gpuProcessTableId>" class="gpu-process-table">\
 								 <thead><tr><th>PID</th><th>Process</th><th>User</th><th>Mem Usage [MB]</th></tr></thead>\
 								 <tbody></tbody></table>\
 								 </div>',
-			htmlProcessTableRow: '<tr><td><pid></td><td><cmd></td><td><username></td><td><mem></td></tr>'
+			htmlProcessTableRow: '<tr><td><pid></td><td><cmd></td><td><username></td><td><mem></td></tr>',
+			urlTemplate: 'http://<computer>:<port>',
+			tensorboard: '<div class="gpu-panel tensorboard" id="<tensorboardId>"><iframe src="<url>"></iframe></div>'
 		},
 		
 		buildPanel: function() {
@@ -98,14 +105,18 @@ var algrmMonitor = algrmMonitor || {};
 			}
 		},
 		
-		buildSVG: function(svg, title) {
-			var margin = {top: 30, right: 20, bottom: 30, left: 50};
+		title2Id: function(title) {
+			return title + "_" + this.model.id;
+		},
+		
+		buildSVG: function(svg, title, lineTitles, yMax) {
+			var margin = {top: 30, right: 40, bottom: 30, left: 50};
 			var width = 450 - margin.left - margin.right;
 			var height = 150 - margin.top - margin.bottom;
 			var x = d3.scale.linear().range([0, width]);
 			var y = d3.scale.linear().range([height, 0]);
 			x.domain([-60, 0]);
-			y.domain([0, 100]);
+			y.domain([0, yMax]);
 			var xAxis = d3.svg.axis().scale(x)
 									 .orient("bottom").ticks(5);
 			var yAxis = d3.svg.axis().scale(y)
@@ -115,7 +126,14 @@ var algrmMonitor = algrmMonitor || {};
 							  .attr("x", (width / 2))
 							  .attr("y", 0 - (margin.top / 2))
 							  .text(title);
-			svg.append("path").attr("class", "line");
+			for (var i in lineTitles) {
+				svg.append("path").attr("class", "line-" + i).attr("id", this.title2Id(lineTitles[i]));
+				svg.append("text").attr("class", "text-line-" + i).attr("id", "text" + this.title2Id(lineTitles[i]))
+								  .attr("x", (width + margin.right - 5))
+								  .attr("y", height / 2 - 8 + i * 16)
+								  .attr("text-anchor", "end")
+								  .text(lineTitles[i]);
+			}
 			svg.append("g").attr("class", "x axis").attr("transform", "translate(0," + height + ")").call(xAxis);
 			svg.append("g").attr("class", "y axis").call(yAxis);
 			svg.x = x;
@@ -126,28 +144,28 @@ var algrmMonitor = algrmMonitor || {};
 		buildPanelStructure: function() {
 			this.gpuPanelTitleId = this.strs.gpuPanelTitleId.replace("<id>", this.model.id);
 			this.gpuUtilGraphPanelId = this.strs.gpuUtilGraphPanelId.replace("<id>", this.model.id);
-			this.gpuMemGraphPanelId = this.strs.gpuMemGraphPanelId.replace("<id>", this.model.id);
+			this.gpuXGraphPanelId = this.strs.gpuXGraphPanelId.replace("<id>", this.model.id);
 			this.gpuProcessPanelId = this.strs.gpuProcessPanelId.replace("<id>", this.model.id);
 			this.gpuProcessTableId = this.strs.gpuProcessTableId.replace("<id>", this.model.id);
 			this.gpuUtilGraphSVGId = this.strs.gpuUtilGraphSVGId.replace("<id>", this.model.id);
-			this.gpuMemGraphSVGId = this.strs.gpuMemGraphSVGId.replace("<id>", this.model.id);
+			this.gpuXGraphSVGId = this.strs.gpuXGraphSVGId.replace("<id>", this.model.id);
 			var html = this.strs.htmlPanelStructure
 				.replace("<gpuPanelTitleId>", this.gpuPanelTitleId)
 				.replace("<gpuUtilGraphPanelId>", this.gpuUtilGraphPanelId)
-				.replace("<gpuMemGraphPanelId>", this.gpuMemGraphPanelId)
+				.replace("<gpuXGraphPanelId>", this.gpuXGraphPanelId)
 				.replace("<gpuProcessPanelId>", this.gpuProcessPanelId)
 				.replace("<gpuName>", this.model.getGPUInfo().gpuName)
 				.replace('<gpuIdx>', this.model.getGPUInfo().gpuIdx)
 				.replace("<gpuProcessTableId>", this.gpuProcessTableId)
 				.replace("<gpuUtilGraphSVGId>", this.gpuUtilGraphSVGId)
-				.replace("<gpuMemGraphSVGId>", this.gpuMemGraphSVGId);
+				.replace("<gpuXGraphSVGId>", this.gpuXGraphSVGId);
 			this.$gpuPanel.html(html);
 			this.$gpuUtilGraphPanel = $("#" + this.gpuUtilGraphPanelId);
-			this.$gpuMemGraphPanel = $("#" + this.gpuMemGraphPanelId);
+			this.$gpuXGraphPanel = $("#" + this.gpuXGraphPanelId);
 			this.$gpuProcessPanel = $("#" + this.gpuProcessPanelId);
 			this.$gpuProcessTable = $("#" + this.gpuProcessTableId + " tbody");
-			this.svgUtil = this.buildSVG(d3.select("#" + this.gpuUtilGraphSVGId), "Util");
-			this.svgMem = this.buildSVG(d3.select("#" + this.gpuMemGraphSVGId), "Memory");
+			this.svgUtil = this.buildSVG(d3.select("#" + this.gpuUtilGraphSVGId), "Performance", [ this.strs.lineUtilTitle, this.strs.lineMemTitle ], 100);
+			this.svgX = this.buildSVG(d3.select("#" + this.gpuXGraphSVGId), "PCI", [this.strs.lineRxTitle, this.strs.lineTxTitle], 15);
 		},
 		
 		buildProcessTable: function() {
@@ -167,11 +185,16 @@ var algrmMonitor = algrmMonitor || {};
 					.replace('<mem>', usedGpuMemory);
 			}
 			this.$gpuProcessTable.html(tablebody);
+			var clickProcessTableRowEvent = this.clickProcessTableRowEvent;
+			this.$gpuProcessTable.off().on("click", "tr", function() { 
+				clickProcessTableRowEvent.notify(this.rowIndex); 
+			}  );
 		},
 		
-		updateSVGWithData(svg, data, x, y) {
+		updateSVGWithData(svg, title, data, x, y) {
+			var id = this.title2Id(title);
 			var valueline = d3.svg.line().x(function(d) { return x(d[0]); }).y(function(d) { return y(d[1]); });
-			svg.select("path").attr("d", valueline(data));
+			svg.select("#" + id).attr("d", valueline(data));
 		},
 		
 		updateUtilGraph: function() {
@@ -186,7 +209,7 @@ var algrmMonitor = algrmMonitor || {};
 					data.push([ltime, gutil[i]]);
 				}
 			}
-			this.updateSVGWithData(this.svgUtil, data, this.svgUtil.x, this.svgUtil.y);
+			this.updateSVGWithData(this.svgUtil, this.strs.lineUtilTitle, data, this.svgUtil.x, this.svgUtil.y);
 		},
 
 		updateMemGraph: function() {
@@ -201,7 +224,37 @@ var algrmMonitor = algrmMonitor || {};
 					data.push([ltime, gmem[i]]);
 				}
 			}
-			this.updateSVGWithData(this.svgMem, data, this.svgMem.x, this.svgMem.y);
+			this.updateSVGWithData(this.svgUtil, this.strs.lineMemTitle, data, this.svgUtil.x, this.svgUtil.y);
+		},
+		
+		updateRxGraph: function() {
+			var gtime = this.model.gpuDetails.graph_time;
+			var grx = this.model.gpuDetails.graph_rx;
+			var n = gtime.length;
+			var end_time = gtime[n - 1];
+			var data = [];
+			for (var i = 0; i < n; i++) {
+				var ltime = gtime[i] - end_time;
+				if (ltime > -60) {
+					data.push([ltime, grx[i]]);
+				}
+			}
+			this.updateSVGWithData(this.svgX, this.strs.lineRxTitle, data, this.svgX.x, this.svgX.y);
+		},
+		
+		updateTxGraph: function() {
+			var gtime = this.model.gpuDetails.graph_time;
+			var gtx = this.model.gpuDetails.graph_tx;
+			var n = gtime.length;
+			var end_time = gtime[n - 1];
+			var data = [];
+			for (var i = 0; i < n; i++) {
+				var ltime = gtime[i] - end_time;
+				if (ltime > -60) {
+					data.push([ltime, gtx[i]]);
+				}
+			}
+			this.updateSVGWithData(this.svgX, this.strs.lineTxTitle, data, this.svgX.x, this.svgX.y);
 		},
 
 		updateOnlineStatus: function() {
@@ -226,6 +279,18 @@ var algrmMonitor = algrmMonitor || {};
 			this.buildProcessTable();
 			this.updateUtilGraph();
 			this.updateMemGraph();
+			this.updateRxGraph();
+			this.updateTxGraph();
+		},
+		
+		hideTensorboard: function(tensorboardId) {
+			$("#" + tensorboardId).remove();
+		},
+		
+		showTensorboard: function(tensorboardId, port) {
+			var url = this.strs.urlTemplate.replace("<computer>", location.hostname).replace("<port>", port);
+			var html = this.strs.tensorboard.replace("<tensorboardId>", tensorboardId).replace("<url>", url);
+			$("#algrmDashboard").prepend(html);
 		}
 
 	};

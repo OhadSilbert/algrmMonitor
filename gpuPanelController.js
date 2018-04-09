@@ -14,6 +14,7 @@ var algrmMonitor = algrmMonitor || {};
 		this.model = model;
 		this.view = view;
 		
+		this.tensorboards = [];
 		this.init();
 	};
 
@@ -32,11 +33,30 @@ var algrmMonitor = algrmMonitor || {};
 		},
 
 		setupHandlers: function () {
+			this.clickProcessTableRowHandler = this.clickProcessTableRow.bind(this);
 			return this;
 		},
 
 		enable: function () {
+			this.view.clickProcessTableRowEvent.attach(this.clickProcessTableRowHandler);
 			return this;
+		},
+		
+		clickProcessTableRow: function(sender, rowIndex) {
+			proc = this.model.getGPUDetails().procs[rowIndex-1];
+			if (proc.tensorboard > 0) {
+				var tensorboardId = proc.username + proc.tensorboard;
+				for (var i=0; i < this.tensorboards.length; i++) {
+					if (this.tensorboards[i].id == tensorboardId) {
+						break;
+					}
+				}
+				if (i == this.tensorboards.length) {
+						this.tensorboards.push({id: tensorboardId});
+						this.view.showTensorboard(tensorboardId, proc.tensorboard);
+				}
+				
+			}
 		},
 		
 		newPanel: function(id) {
@@ -49,7 +69,7 @@ var algrmMonitor = algrmMonitor || {};
 		
 		updateGPUDetails: function(url) {
 			var currentController = this;
-			return $.getJSON(url, {"gpuIdx" : this.model.getGPUInfo().gpuIdx})
+			return $.getJSON(url, {"gpuIdx" : this.model.getGPUInfo().gpuIdx, "lTime" : this.model.getGPULTime()})
 				.then(function(gpuDetails) {
 					currentController.model.updateGPUDetails(gpuDetails);
 					currentController.model.onlineGPUDetails(true);
