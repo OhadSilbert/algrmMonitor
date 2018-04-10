@@ -163,21 +163,26 @@ def monitor_device(gpu_idx, ltime):
             tensorboard_port = -1
             try:
                 user_name = proc.username()
-                for q in psutil.process_iter(attrs=["name", "username", "cmdline"]):
-                    try:
-                        if user_name == q.username() and "tensorboard" in q.name():
-                            tensorboard_port = 6006
-                            for i, w in enumerate(q.cmdline()):
-                                if "port" in w:
-                                    tensorboard_port = int(q.cmdline()[i + 1])
-                                    break
-                    except:
-                        continue
-
-                user_name = user_name.replace('\\', '/')
             except:
                 user_name = 'N/A'
-                tensorboard_port = -1
+
+            # try:
+            #     user_name = proc.username()
+            #     for q in psutil.process_iter(attrs=["name", "username", "cmdline"]):
+            #         try:
+            #             if user_name == q.username() and "tensorboard" in q.name():
+            #                 tensorboard_port = 6006
+            #                 for i, w in enumerate(q.cmdline()):
+            #                     if "port" in w:
+            #                         tensorboard_port = int(q.cmdline()[i + 1])
+            #                         break
+            #         except:
+            #             continue
+            #
+            #     user_name = user_name.replace('\\', '/')
+            # except:
+            #     user_name = 'N/A'
+            #     tensorboard_port = -1
             procs_info.append({"pid": p.pid,
                                "usedGpuMemory": used_gpu_memory,
                                "cmd": cmd,
