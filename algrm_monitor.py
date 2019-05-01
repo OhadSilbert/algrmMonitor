@@ -6,6 +6,11 @@ import time
 from collections import deque
 from py3nvml.py3nvml import *
 import copy
+import logging
+
+
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.ERROR)
 
 
 TIME_INTERVAL = 0.5
