@@ -11,7 +11,7 @@ import copy
 TIME_INTERVAL = 0.5
 
 
-app = Flask(__name__, static_folder='C:\\algrmMonitor\\')
+app = Flask(__name__, static_folder='/mnt/data/Users/ohads/Documents/Repositories/algrmMonitor')
 
 
 class HistoryObject:
@@ -76,7 +76,7 @@ devices_history = list()  # list of histories for all gpus. It holds History obj
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Resource Manager')
-    parser.add_argument("-p", "--port", help="port of algrm_server", default=4040, type=int)
+    parser.add_argument("-p", "--port", help="port of algrm_server", default=4445, type=int)
     return parser.parse_args()
 
 
@@ -157,32 +157,16 @@ def monitor_device(gpu_idx, ltime):
 
         procs_info = list()
         for p in procs:
-            proc = psutil.Process(p.pid)
-            used_gpu_memory = {None: -1}.get(p.usedGpuMemory, p.usedGpuMemory)
-            cmd = proc.name()
-            tensorboard_port = -1
             try:
+                proc = psutil.Process(p.pid)
                 user_name = proc.username()
-            except:
-                user_name = 'N/A'
-
-            # try:
-            #     user_name = proc.username()
-            #     for q in psutil.process_iter(attrs=["name", "username", "cmdline"]):
-            #         try:
-            #             if user_name == q.username() and "tensorboard" in q.name():
-            #                 tensorboard_port = 6006
-            #                 for i, w in enumerate(q.cmdline()):
-            #                     if "port" in w:
-            #                         tensorboard_port = int(q.cmdline()[i + 1])
-            #                         break
-            #         except:
-            #             continue
-            #
-            #     user_name = user_name.replace('\\', '/')
-            # except:
-            #     user_name = 'N/A'
-            #     tensorboard_port = -1
+                cmd = proc.name()
+            except :
+                # can fail if it is run on docker.
+                user_name = ''
+                cmd = ''
+            used_gpu_memory = {None: -1}.get(p.usedGpuMemory, p.usedGpuMemory)
+            tensorboard_port = -1
             procs_info.append({"pid": p.pid,
                                "usedGpuMemory": used_gpu_memory,
                                "cmd": cmd,
