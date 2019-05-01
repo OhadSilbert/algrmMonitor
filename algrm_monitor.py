@@ -11,7 +11,7 @@ import copy
 TIME_INTERVAL = 0.5
 
 
-app = Flask(__name__, static_folder='/mnt/data/Users/ohads/Documents/Repositories/algrmMonitor')
+app = Flask(__name__, static_folder='/app')
 
 
 class HistoryObject:
