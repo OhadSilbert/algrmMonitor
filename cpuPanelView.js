@@ -67,7 +67,7 @@ var algrmMonitor = algrmMonitor || {};
 			lineUtilTitle: "Util",
 			lineMemTitle: "Mem",
 			htmlPanel: '<div id="<cpuPanelId>" class="cpu-panel"></div>',
-			htmlPanelStructure: '<h1 id="<cpuPanelTitleId>" class="cpu-title"><cpuName> (<cpuIdx>)</h1> \
+			htmlPanelStructure: '<h1 id="<cpuPanelTitleId>" class="cpu-title"><cpuName></h1> \
 								 <div id="<cpuUtilGraphPanelId>"  class="cpu-graph"> \
 								 <svg id="<cpuUtilGraphSVGId>" class="cpu-svg"></svg> \
 								 </div>',
