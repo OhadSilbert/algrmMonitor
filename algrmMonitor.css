@@ -61,7 +61,19 @@ body::after {
 	fill: none;
 }
 
+.device-graph .bar-0 {
+	stroke: #9fa3df;
+	stroke-width: 2;
+	fill: #9fa3df;
+}
+
 .device-graph .text-line-0 {
+	fill: #9fa3df;
+	font-size: small;
+	stroke: #9fa3df;
+}
+
+.device-graph .text-bar-0 {
 	fill: #9fa3df;
 	font-size: small;
 	stroke: #9fa3df;
@@ -73,7 +85,19 @@ body::after {
 	fill: none;
 }
 
+.device-graph .bar-1 {
+	stroke: #9ccc9f;
+	stroke-width: 2;
+	fill: #9ccc9f;
+}
+
 .device-graph .text-line-1 {
+	fill: #9ccc9f;
+	font-size: small;
+	stroke: #9ccc9f;
+}
+
+.device-graph .text-bar-1 {
 	fill: #9ccc9f;
 	font-size: small;
 	stroke: #9ccc9f;

@@ -7,6 +7,7 @@ from collections import deque
 from py3nvml.py3nvml import *
 import copy
 import logging
+import os.path
 
 
 log = logging.getLogger('werkzeug')
@@ -15,8 +16,7 @@ log.setLevel(logging.ERROR)
 
 TIME_INTERVAL = 0.5
 
-
-app = Flask(__name__, static_folder='/mnt/data/Users/ohads/linux/repos/algrmMonitor')
+app = Flask(__name__, static_folder=print(os.path.dirname(os.path.abspath(__file__))))
 
 
 class HistoryObject:
@@ -91,7 +91,7 @@ devices_history = list()  # list of histories for the computer cpu and  all gpus
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Resource Manager')
-    parser.add_argument("-p", "--port", help="port of algrm_server", default=4446, type=int)
+    parser.add_argument("-p", "--port", help="port of algrm_server", default=4445, type=int)
     return parser.parse_args()
 
 
@@ -197,7 +197,8 @@ def monitor_computer(ltime):
         ret = {"memTotal": psutil.virtual_memory().total,
                "memFree": psutil.virtual_memory().free,
                "memUsed": psutil.virtual_memory().percent,
-               "cpuUtil": psutil.cpu_percent()
+               "cpuUtil": psutil.cpu_percent(),
+               "coresUtil": psutil.cpu_percent(percpu=True)
               }
 
         ret = add_cpu_history_to_json(ret, devices_history[0], ltime)
