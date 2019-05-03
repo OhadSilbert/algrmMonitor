@@ -14,7 +14,6 @@ var algrmMonitor = algrmMonitor || {};
 		this.model = model;
 		
 		// here should be event dispachers for events coming from the view
-		this.clickProcessTableRowEvent = new algrmMonitor.eventDispatcher(this);
 
 		this.init();
 	};
@@ -90,7 +89,6 @@ var algrmMonitor = algrmMonitor || {};
 								 </div>',
 			htmlProcessTableRow: '<tr><td><pid></td><td><cmd></td><td><username></td><td><mem></td></tr>',
 			urlTemplate: 'http://<computer>:<port>',
-			tensorboard: '<div class="gpu-panel tensorboard" id="<tensorboardId>"><iframe src="<url>"></iframe></div>'
 		},
 		
 		buildPanel: function() {
@@ -185,10 +183,6 @@ var algrmMonitor = algrmMonitor || {};
 					.replace('<mem>', usedGpuMemory);
 			}
 			this.$gpuProcessTable.html(tablebody);
-			var clickProcessTableRowEvent = this.clickProcessTableRowEvent;
-			this.$gpuProcessTable.off().on("click", "tr", function() { 
-				clickProcessTableRowEvent.notify(this.rowIndex); 
-			}  );
 		},
 		
 		updateSVGWithData(svg, title, data, x, y) {
@@ -281,18 +275,7 @@ var algrmMonitor = algrmMonitor || {};
 			this.updateMemGraph();
 			this.updateRxGraph();
 			this.updateTxGraph();
-		},
-		
-		hideTensorboard: function(tensorboardId) {
-			$("#" + tensorboardId).remove();
-		},
-		
-		showTensorboard: function(tensorboardId, port) {
-			var url = this.strs.urlTemplate.replace("<computer>", location.hostname).replace("<port>", port);
-			var html = this.strs.tensorboard.replace("<tensorboardId>", tensorboardId).replace("<url>", url);
-			$("#algrmDashboard").prepend(html);
 		}
-
 	};
 
 })();

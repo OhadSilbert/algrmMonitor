@@ -16,19 +16,29 @@ log.setLevel(logging.ERROR)
 TIME_INTERVAL = 0.5
 
 
-app = Flask(__name__, static_folder='/algrmMonitor')
+app = Flask(__name__, static_folder='/mnt/data/Users/ohads/linux/repos/algrmMonitor')
 
 
 class HistoryObject:
     """
     This is a time point of a single gpu state at time t
     """
-    def __init__(self, t, util, mem, rx, tx):
+    def __init__(self, t, util, mem):
         self.t = t
         self.util = util
         self.mem = mem
+
+
+class GPUHistoryObject(HistoryObject):
+    def __init__(self, t, util, mem, rx, tx):
+        super().__init__(t, util, mem)
         self.rx = rx
         self.tx = tx
+
+
+class CPUHistoryObject(HistoryObject):
+    def __init__(self, t, util, mem):
+        super().__init__(t, util, mem)
 
 
 class History:
@@ -76,12 +86,12 @@ class History:
     pass
 
 
-devices_history = list()  # list of histories for all gpus. It holds History object for each gpu
+devices_history = list()  # list of histories for the computer cpu and  all gpus. It holds History object for each device
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Resource Manager')
-    parser.add_argument("-p", "--port", help="port of algrm_server", default=4445, type=int)
+    parser.add_argument("-p", "--port", help="port of algrm_server", default=4446, type=int)
     return parser.parse_args()
 
 
@@ -89,19 +99,22 @@ def monitor_daemon():
     while True:
         time.sleep(TIME_INTERVAL)
         t = time.time()
-        device_count = nvmlDeviceGetCount()
+        devices_history[0].add(CPUHistoryObject(t=t,
+                                                util=psutil.cpu_percent(),
+                                                mem=psutil.virtual_memory().percent))
 
+        device_count = nvmlDeviceGetCount()
         for i in range(device_count):
             handle = nvmlDeviceGetHandleByIndex(i)
             util = nvmlDeviceGetUtilizationRates(handle)
             mem_info = nvmlDeviceGetMemoryInfo(handle)
             tx_bytes = nvmlDeviceGetPcieThroughput(handle, NVML_PCIE_UTIL_TX_BYTES)
             rx_bytes = nvmlDeviceGetPcieThroughput(handle, NVML_PCIE_UTIL_RX_BYTES)
-            devices_history[i].add(HistoryObject(t=t,
-                                                 util=util.gpu,
-                                                 mem=100 * mem_info.used / mem_info.total,
-                                                 rx=rx_bytes / 1024 / 1024,
-                                                 tx=tx_bytes / 1024 / 1024))
+            devices_history[i + 1].add(GPUHistoryObject(t=t,
+                                                    util=util.gpu,
+                                                    mem=100 * mem_info.used / mem_info.total,
+                                                    rx=rx_bytes / 1024 / 1024,
+                                                    tx=tx_bytes / 1024 / 1024))
     pass
 
 
@@ -109,24 +122,32 @@ def main():
     args = parse_args()
     app.debug = False
     nvmlInit()
-    for _ in range(nvmlDeviceGetCount()):
+    for _ in range(nvmlDeviceGetCount() + 1):
         devices_history.append(History())
     t = threading.Thread(name='monitor-daemon', target=monitor_daemon, daemon=True)
     t.start()
     app.run(port=args.port, host='0.0.0.0', threaded=True)
 
 
-def monitor_all_gpus():
+def monitor_all():
     device_count = nvmlDeviceGetCount()
     ret = list()
+    ret.append({"cpuIdx": -1,
+                "cpuName": "CPU",
+                "ncores": psutil.cpu_count(),
+                "memTotal": psutil.virtual_memory().total})
     for i in range(device_count):
         handle = nvmlDeviceGetHandleByIndex(i)
         pci_info = nvmlDeviceGetPciInfo(handle)
         mem_info = nvmlDeviceGetMemoryInfo(handle)
+        temperature = nvmlDeviceGetTemperature(handle, 0)
+        temperatureThreshold = nvmlDeviceGetTemperatureThreshold(handle, 0)
         ret.append({"gpuIdx": i,
                     "gpuId": pci_info.busId.decode("utf-8"),
                     "gpuName": nvmlDeviceGetName(handle),
-                    "memTotal": mem_info.total})
+                    "memTotal": mem_info.total,
+                    "temperature": temperature,
+                    "temperatureThreshold": temperatureThreshold})
     return f'{ret}'.replace("'", '"')
 
 
@@ -145,7 +166,48 @@ def add_gpu_history_to_json(jsn, history, ltime):
     return jsn
 
 
+def add_cpu_history_to_json(jsn, history, ltime):
+    """
+    add the cpu history to the json
+    :param jsn: json
+    :param history: History
+    :param ltime:  last time in the graph
+    :return: the updated json
+    """
+    l = history.get_from(ltime)
+    f = ["graph_time", "graph_util", "graph_mem"]
+    for i, v in enumerate(zip(*map(lambda x: (x.t, x.util, x.mem), l))):
+        jsn[f[i]] = list(v)
+    return jsn
+
+
 def monitor_device(gpu_idx, ltime):
+    if type(gpu_idx) is not int:
+        raise TypeError("gpu_idx type error")
+    elif gpu_idx < -1:
+        raise ValueError("gou_idx should be either -1 or non-negative")
+    elif gpu_idx == -1:
+        return monitor_computer(ltime)
+    else:
+        return monitor_gpu(gpu_idx, ltime)
+
+
+def monitor_computer(ltime):
+    try:
+        ret = {"memTotal": psutil.virtual_memory().total,
+               "memFree": psutil.virtual_memory().free,
+               "memUsed": psutil.virtual_memory().percent,
+               "cpuUtil": psutil.cpu_percent()
+              }
+
+        ret = add_cpu_history_to_json(ret, devices_history[0], ltime)
+        return f'{ret}'.replace("'", '"')
+    except :
+        return ''
+    pass
+
+
+def monitor_gpu(gpu_idx, ltime):
     try:
         handle = nvmlDeviceGetHandleByIndex(gpu_idx)
         procs = nvmlDeviceGetComputeRunningProcesses(handle)
@@ -153,8 +215,10 @@ def monitor_device(gpu_idx, ltime):
         mem_info = nvmlDeviceGetMemoryInfo(handle)
         util = nvmlDeviceGetUtilizationRates(handle)
         gpu_util = util.gpu
+        temperature = nvmlDeviceGetTemperature(handle, 0)
+        temperatureThreshold = nvmlDeviceGetTemperatureThreshold(handle, 0)
+
         # mem_util = util.memory
-        # temp = nvmlDeviceGetTemperature(handle, NVML_TEMPERATURE_GPU)
         # gpu_clock = nvmlDeviceGetClockInfo(handle, NVML_CLOCK_GRAPHICS)
         # gpu_clock_max = nvmlDeviceGetMaxClockInfo(handle, NVML_CLOCK_GRAPHICS)
         # gpu_mem_clock = nvmlDeviceGetClockInfo(handle, NVML_CLOCK_MEM)
@@ -171,21 +235,22 @@ def monitor_device(gpu_idx, ltime):
                 user_name = ''
                 cmd = ''
             used_gpu_memory = {None: -1}.get(p.usedGpuMemory, p.usedGpuMemory)
-            tensorboard_port = -1
             procs_info.append({"pid": p.pid,
                                "usedGpuMemory": used_gpu_memory,
                                "cmd": cmd,
-                               "username": user_name,
-                               "tensorboard": tensorboard_port})
+                               "username": user_name
+                               })
             pass
 
         ret = {"memTotal": mem_info.total,
                "memFree": mem_info.free,
                "memUsed": mem_info.used,
                "gpuUtil": gpu_util,
-               "procs": procs_info}
+               "procs": procs_info,
+               "temperature": temperature,
+               "temperatureThreshold": temperatureThreshold}
 
-        ret = add_gpu_history_to_json(ret, devices_history[gpu_idx], ltime)
+        ret = add_gpu_history_to_json(ret, devices_history[gpu_idx + 1], ltime)
         return f'{ret}'.replace("'", '"')
     except:
         return ''
@@ -194,10 +259,10 @@ def monitor_device(gpu_idx, ltime):
 
 @app.route('/monitor/GPUs', methods=['GET', 'POST'])
 def monitor_gpus():
-    gpu_idx = request.args.get('gpuIdx', default=-1, type=int)
+    gpu_idx = request.args.get('gpuIdx', default=-999, type=int)
     ltime = request.args.get('lTime', default=0, type=float)
-    if gpu_idx == -1:
-        return monitor_all_gpus()
+    if gpu_idx == -999:
+        return monitor_all()
     else:
         return monitor_device(gpu_idx, ltime)
     pass

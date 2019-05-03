@@ -5,25 +5,40 @@ var algrmMonitor = algrmMonitor || {};
 	
 	$(document).ready(function() { algrmMonitor.buildAlgrmDashboard(); });
 
-	algrmMonitor.constructGPUPanels = function(gpus) {
+	algrmMonitor.constructDevicePanels = function(devices) {
 		var panels = []
+		var cpuPanel = null;
 		
 		// build MVC for each panel
-		for (var i in gpus) {
-			var gpu = gpus[i];
-			var panelModel = new algrmMonitor.gpuPanelModel();
-			var panelView = new algrmMonitor.gpuPanelView(panelModel);
-			var panelController = new algrmMonitor.gpuPanelController(panelModel, panelView);
-			var panelMVC = {"model": panelModel, "view": panelView, "controller": panelController};
-			panels.push(panelMVC);
+		var gpus = []
+		var cpu = null;
+		for (var i in devices) {
+			var device = devices[i];
+			if (device.hasOwnProperty("gpuIdx")) {
+				gpus.push(device);
+				var panelModel = new algrmMonitor.gpuPanelModel();
+				var panelView = new algrmMonitor.gpuPanelView(panelModel);
+				var panelController = new algrmMonitor.gpuPanelController(panelModel, panelView);
+				var panelMVC = {"model": panelModel, "view": panelView, "controller": panelController};
+			        panels.push(panelMVC);
+			} else {
+				cpu = device;
+				var panelModel = new algrmMonitor.cpuPanelModel();
+				var panelView = new algrmMonitor.cpuPanelView(panelModel);
+				var panelController = new algrmMonitor.cpuPanelController(panelModel, panelView);
+				var panelMVC = {"model": panelModel, "view": panelView, "controller": panelController};
+			        cpuPanel = panelMVC;
+			}
 		}
 
 		// assign id to each panel
+		cpuPanel.controller.newPanel(-1)
 		for (var i in panels) {
 			panels[i].controller.newPanel(i);
 		}
 		
 		// update each panel with the gpu info
+		cpuPanel.controller.updateCPUInfo(cpu);
 		for (var i in panels) {
 			panels[i].controller.updateGPUInfo(gpus[i]);
 		}
@@ -31,6 +46,7 @@ var algrmMonitor = algrmMonitor || {};
 		// update gpu data in panels every seconds
 		// notice that updateGPUDetails return a promise if you need to use it. 
 		setInterval(function() {
+			cpuPanel.controller.updateCPUDetails(algrmServerURL);
 			for (var i in panels) {
 				panels[i].controller.updateGPUDetails(algrmServerURL);
 			}
@@ -43,7 +59,7 @@ var algrmMonitor = algrmMonitor || {};
 		$.getJSON(algrmServerURL)
 		.done( function(data) {
 			$("#algrmDashboard").empty();
-			algrmMonitor.constructGPUPanels(data);
+			algrmMonitor.constructDevicePanels(data);
 		} )
 		.fail( function() {
 			console.log("failed to load GPUs: algrm server is not responding");

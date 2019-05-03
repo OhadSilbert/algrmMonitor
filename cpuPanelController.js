@@ -8,16 +8,16 @@ var algrmMonitor = algrmMonitor || {};
 	 
 	/* ================================================================= */
 	/* 
-	 *                           gpuPanelController
+	 *                           cpuPanelController
 	 */
-	algrmMonitor.gpuPanelController = function (model, view) {
+	algrmMonitor.cpuPanelController = function (model, view) {
 		this.model = model;
 		this.view = view;
 		
 		this.init();
 	};
 
-	algrmMonitor.gpuPanelController.prototype = {
+	algrmMonitor.cpuPanelController.prototype = {
 		init: function () {
 			this.createChildren()
 				.setupHandlers()
@@ -43,19 +43,19 @@ var algrmMonitor = algrmMonitor || {};
 			this.model.newPanel(id);
 		},
 		
-		updateGPUInfo: function(gpuInfo) {
-			this.model.updateGPUInfo(gpuInfo);
+		updateCPUInfo: function(cpuInfo) {
+			this.model.updateCPUInfo(cpuInfo);
 		},
 		
-		updateGPUDetails: function(url) {
+		updateCPUDetails: function(url) {
 			var currentController = this;
-			return $.getJSON(url, {"gpuIdx" : this.model.getGPUInfo().gpuIdx, "lTime" : this.model.getGPULTime()})
-				.then(function(gpuDetails) {
-					currentController.model.updateGPUDetails(gpuDetails);
-					currentController.model.onlineGPUDetails(true);
+			return $.getJSON(url, {"gpuIdx" : this.model.getCPUInfo().cpuIdx, "lTime" : this.model.getCPULTime()})
+				.then(function(cpuDetails) {
+					currentController.model.updateCPUDetails(cpuDetails);
+					currentController.model.onlineCPUDetails(true);
 				})
 				.fail(function() {
-					currentController.model.onlineGPUDetails(false);
+					currentController.model.onlineCPUDetails(false);
 				});
 		}
 	};
