@@ -23,7 +23,7 @@ body::after {
 	flex-wrap: wrap;
 }
 
-.gpu-panel {
+.device-panel {
 	margin: 14px;
 	padding: 5px;
 	width: 500px;
@@ -31,14 +31,14 @@ body::after {
 	background-color: white;
 }
 
-.gpu-graph {
+.device-graph {
 	width: 450px;
 	height: 180px;
 	display: block;
 	margin: auto;
 }
 
-.gpu-svg {
+.device-svg {
 	width: 450px;
 	height: 150px;
 	display: block;
@@ -50,49 +50,49 @@ body::after {
 	font-size: 16px;
 }
 
-.gpu-graph path { 
+.device-graph path { 
     stroke-width: 2;
     fill: none;
 }
 
-.gpu-graph .line-0 {
+.device-graph .line-0 {
 	stroke: #9fa3df;
 	stroke-width: 2;
 	fill: none;
 }
 
-.gpu-graph .text-line-0 {
+.device-graph .text-line-0 {
 	fill: #9fa3df;
 	font-size: small;
 	stroke: #9fa3df;
 }
 
-.gpu-graph .line-1 {
+.device-graph .line-1 {
 	stroke: #9ccc9f;
 	stroke-width: 2;
 	fill: none;
 }
 
-.gpu-graph .text-line-1 {
+.device-graph .text-line-1 {
 	fill: #9ccc9f;
 	font-size: small;
 	stroke: #9ccc9f;
 }
 
-.gpu-graph .axis path,
-.gpu-graph .axis line {
+.device-graph .axis path,
+.device-graph .axis line {
     fill: none;
     stroke: black;
     stroke-width: 1;
     shape-rendering: crispEdges;
 }
 
-.gpu-graph .axis text {
+.device-graph .axis text {
 	font: 12px Arial;
 	fill: black;
 }
 
-.gpu-process {
+.device-process {
 	max-height: 180px;
 	overflow-y: auto;
 	display: flex;
@@ -100,33 +100,33 @@ body::after {
     justify-content: center;
 }
 
-.gpu-panel .gpu-title {
+.device-panel .device-title {
 	text-align: center;
 	font-size: 20px;
 	margin: 25px;
 }
 
-.gpu-process-table {
+.device-process-table {
     border-collapse: collapse;
 	border: 1px solid #ddd;
     width: 450px;
 }
 
-.gpu-process-table td, .gpu-process-table th {
+.device-process-table td, .device-process-table th {
     padding: 8px;
 }
 
-.gpu-process-table tr {
+.device-process-table tr {
 	background-color: white;
 }
 
-.gpu-process-table tr:hover {background-color: #f0f0f0;}
+.device-process-table tr:hover {background-color: #f0f0f0;}
 
 thead {
 	border: 1px solid #ddd;
 }
 
-.gpu-process-table th {
+.device-process-table th {
 	font: bold;
     padding-top: 12px;
     padding-bottom: 12px;
@@ -134,95 +134,13 @@ thead {
     background-color: white;
 }
 
-.gpu-process-table-freeze th {
+.device-process-table-freeze th {
     color: #e0e0e0;
 }
 
-.gpu-process-table-freeze tr {
+.device-process-table-freeze tr {
     color: #e0e0e0;
 }
-
-.gpu-panel.tensorboard {
-	width: 1040px;
-	height: 800px;
-	padding: 10px;
-}
-
-
-.cpu-panel {
-	margin: 14px;
-	padding: 5px;
-	width: 500px;
-	height: 600px;
-	background-color: white;
-}
-
-.cpu-graph {
-	width: 450px;
-	height: 180px;
-	display: block;
-	margin: auto;
-}
-
-.cpu-svg {
-	width: 450px;
-	height: 150px;
-	display: block;
-	margin: auto;
-}
-
-.cpu-graph path { 
-    stroke-width: 2;
-    fill: none;
-}
-
-.cpu-graph .line-0 {
-	stroke: #9fa3df;
-	stroke-width: 2;
-	fill: none;
-}
-
-.cpu-graph .text-line-0 {
-	fill: #9fa3df;
-	font-size: small;
-	stroke: #9fa3df;
-}
-
-.cpu-graph .line-1 {
-	stroke: #9ccc9f;
-	stroke-width: 2;
-	fill: none;
-}
-
-.cpu-graph .text-line-1 {
-	fill: #9ccc9f;
-	font-size: small;
-	stroke: #9ccc9f;
-}
-
-.cpu-graph .axis path,
-.cpu-graph .axis line {
-    fill: none;
-    stroke: black;
-    stroke-width: 1;
-    shape-rendering: crispEdges;
-}
-
-.cpu-graph .axis text {
-	font: 12px Arial;
-	fill: black;
-}
-
-.cpu-panel .cpu-title {
-	text-align: center;
-	font-size: 20px;
-	margin: 25px;
-}
-
-thead {
-	border: 1px solid #ddd;
-}
-
 
 iframe {
 	width: 100%;

@@ -66,10 +66,10 @@ var algrmMonitor = algrmMonitor || {};
 			cpuUtilGraphSVGId: "cpuUtilGraphSVG_<id>",
 			lineUtilTitle: "Util",
 			lineMemTitle: "Mem",
-			htmlPanel: '<div id="<cpuPanelId>" class="cpu-panel"></div>',
-			htmlPanelStructure: '<h1 id="<cpuPanelTitleId>" class="cpu-title"><cpuName></h1> \
-								 <div id="<cpuUtilGraphPanelId>"  class="cpu-graph"> \
-								 <svg id="<cpuUtilGraphSVGId>" class="cpu-svg"></svg> \
+			htmlPanel: '<div id="<cpuPanelId>" class="device-panel"></div>',
+			htmlPanelStructure: '<h1 id="<cpuPanelTitleId>" class="device-title"><cpuName></h1> \
+								 <div id="<cpuUtilGraphPanelId>"  class="device-graph"> \
+								 <svg id="<cpuUtilGraphSVGId>" class="device-svg"></svg> \
 								 </div>',
 			urlTemplate: 'http://<computer>:<port>',
 		},

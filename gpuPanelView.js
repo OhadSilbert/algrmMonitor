@@ -74,16 +74,16 @@ var algrmMonitor = algrmMonitor || {};
 			lineMemTitle: "Mem",
 			lineRxTitle: "rx",
 			lineTxTitle: "tx",
-			htmlPanel: '<div id="<gpuPanelId>" class="gpu-panel"></div>',
-			htmlPanelStructure: '<h1 id="<gpuPanelTitleId>" class="gpu-title"><gpuName> (<gpuIdx>)</h1> \
-								 <div id="<gpuUtilGraphPanelId>"  class="gpu-graph"> \
-								 <svg id="<gpuUtilGraphSVGId>" class="gpu-svg"></svg> \
+			htmlPanel: '<div id="<gpuPanelId>" class="device-panel"></div>',
+			htmlPanelStructure: '<h1 id="<gpuPanelTitleId>" class="device-title"><gpuName> (<gpuIdx>)</h1> \
+								 <div id="<gpuUtilGraphPanelId>"  class="device-graph"> \
+								 <svg id="<gpuUtilGraphSVGId>" class="device-svg"></svg> \
 								 </div> \
-								 <div id="<gpuXGraphPanelId>"  class="gpu-graph"> \
-								 <svg id="<gpuXGraphSVGId>" class="gpu-svg"></svg> \
+								 <div id="<gpuXGraphPanelId>"  class="device-graph"> \
+								 <svg id="<gpuXGraphSVGId>" class="device-svg"></svg> \
 								 </div> \
-								 <div id="<gpuProcessPanelId>"  class="gpu-process"> \
-								 <table id="<gpuProcessTableId>" class="gpu-process-table">\
+								 <div id="<gpuProcessPanelId>"  class="device-process"> \
+								 <table id="<gpuProcessTableId>" class="device-process-table">\
 								 <thead><tr><th>PID</th><th>Process</th><th>User</th><th>Mem Usage [MB]</th></tr></thead>\
 								 <tbody></tbody></table>\
 								 </div>',
