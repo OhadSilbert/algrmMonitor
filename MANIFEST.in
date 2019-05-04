@@ -1,0 +1,4 @@
+# NOTE: The files files included here should exactly match the files included in the setup function in setup.py, under
+# package_data.
+include README.md
+recursive-include algrmMonitorApp *.js *png *.css *.html

@@ -16,7 +16,8 @@ log.setLevel(logging.ERROR)
 
 TIME_INTERVAL = 0.5
 
-app = Flask(__name__, static_folder=os.path.dirname(os.path.abspath(__file__)))
+app = Flask(__name__, static_folder=os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 
+                                                'algrmMonitorApp'))
 
 
 class HistoryObject:
