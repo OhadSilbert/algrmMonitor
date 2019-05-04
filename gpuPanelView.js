@@ -76,8 +76,15 @@ var algrmMonitor = algrmMonitor || {};
 			lineRxTitle: "rx",
 			lineTxTitle: "tx",
 			htmlPanel: '<div id="<gpuPanelId>" class="device-panel"></div>',
-			htmlPanelStructure: '<div id="<gpuTempGaugeId>" class="gpu-gauge"></div> \
+			htmlPanelStructure: '<div class="gpu-title-box"> \
+			                     <div class="gpu-title-chart"> \
+								 <div id="<gpuTempGaugeId>" class="gpu-gauge"></div> \
+								 </div> \
+								 <div class="gpu-title-text"> \
 								 <h1 id="<gpuPanelTitleId>" class="device-title"><gpuName> (<gpuIdx>)</h1> \
+								 </div> \
+								 <div class="gpu-title-chart"> </div> \
+								 </div> \
 								 <div id="<gpuUtilGraphPanelId>"  class="device-graph"> \
 								 <svg id="<gpuUtilGraphSVGId>" class="device-svg"></svg> \
 								 </div> \

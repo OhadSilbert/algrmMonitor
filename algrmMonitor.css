@@ -130,6 +130,21 @@ body::after {
 	margin: 25px;
 }
 
+.gpu-title-box {
+	display: flex;
+    justify-content: center;
+	flex-wrap: wrap;
+	width: 500px;
+}
+
+.gpu-title-chart {
+	width: 100px;
+}
+
+.gpu-title-text {
+	width: 300px;
+}
+
 .device-process-table {
     border-collapse: collapse;
 	border: 1px solid #ddd;

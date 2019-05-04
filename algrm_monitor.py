@@ -91,7 +91,7 @@ devices_history = list()  # list of histories for the computer cpu and  all gpus
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Resource Manager')
-    parser.add_argument("-p", "--port", help="port of algrm_server", default=4446, type=int)
+    parser.add_argument("-p", "--port", help="port of algrm_server", default=4445, type=int)
     return parser.parse_args()
 
 
