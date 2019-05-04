@@ -69,13 +69,15 @@ var algrmMonitor = algrmMonitor || {};
 			gpuProcessPanelId: "gpuProcessPanel_<id>",
 			gpuProcessTableId: "gpuProcessTable_<id>",
 			gpuUtilGraphSVGId: "gpuUtilGraphSVG_<id>",
+			gpuTempGaugeId: "gpuTempGaugeId_<id>",
 			gpuXGraphSVGId: "gpuXGraphSVG_<id>",
 			lineUtilTitle: "Util",
 			lineMemTitle: "Mem",
 			lineRxTitle: "rx",
 			lineTxTitle: "tx",
 			htmlPanel: '<div id="<gpuPanelId>" class="device-panel"></div>',
-			htmlPanelStructure: '<h1 id="<gpuPanelTitleId>" class="device-title"><gpuName> (<gpuIdx>)</h1> \
+			htmlPanelStructure: '<div id="<gpuTempGaugeId>" class="gpu-gauge"></div> \
+								 <h1 id="<gpuPanelTitleId>" class="device-title"><gpuName> (<gpuIdx>)</h1> \
 								 <div id="<gpuUtilGraphPanelId>"  class="device-graph"> \
 								 <svg id="<gpuUtilGraphSVGId>" class="device-svg"></svg> \
 								 </div> \
@@ -138,10 +140,35 @@ var algrmMonitor = algrmMonitor || {};
 			svg.y = y;
 			return svg;
 		},
+
+		buildGauge: function(member, gauge, title, val, valThreshold) {
+			var panel = this;
+			google.charts.load('current', {'packages':['gauge']});
+			google.charts.setOnLoadCallback( function() {
+				chart = panel.buildGaugeCallback(member, gauge, title, val, valThreshold)
+			});
+		},
+
+		buildGaugeCallback: function(member, gauge, title, val, valThreshold) {
+			var data = google.visualization.arrayToDataTable([
+				['Label', 'Value'],
+				[title, val]]);
+	  
+			  var options = {
+				width: 300, height: 90,
+				redFrom: valThreshold, redTo: 120,
+				minorTicks: 5
+			  };
+			
+			this[member] = new google.visualization.Gauge(gauge[0][0]);
+
+			this[member].draw(data, options);
+		},
 		
 		buildPanelStructure: function() {
 			this.gpuPanelTitleId = this.strs.gpuPanelTitleId.replace("<id>", this.model.id);
 			this.gpuUtilGraphPanelId = this.strs.gpuUtilGraphPanelId.replace("<id>", this.model.id);
+			this.gpuTempGaugeId = this.strs.gpuTempGaugeId.replace("<id>", this.model.id);
 			this.gpuXGraphPanelId = this.strs.gpuXGraphPanelId.replace("<id>", this.model.id);
 			this.gpuProcessPanelId = this.strs.gpuProcessPanelId.replace("<id>", this.model.id);
 			this.gpuProcessTableId = this.strs.gpuProcessTableId.replace("<id>", this.model.id);
@@ -156,7 +183,8 @@ var algrmMonitor = algrmMonitor || {};
 				.replace('<gpuIdx>', this.model.getGPUInfo().gpuIdx)
 				.replace("<gpuProcessTableId>", this.gpuProcessTableId)
 				.replace("<gpuUtilGraphSVGId>", this.gpuUtilGraphSVGId)
-				.replace("<gpuXGraphSVGId>", this.gpuXGraphSVGId);
+				.replace("<gpuXGraphSVGId>", this.gpuXGraphSVGId)
+				.replace("<gpuTempGaugeId>", this.gpuTempGaugeId);
 			this.$gpuPanel.html(html);
 			this.$gpuUtilGraphPanel = $("#" + this.gpuUtilGraphPanelId);
 			this.$gpuXGraphPanel = $("#" + this.gpuXGraphPanelId);
@@ -164,6 +192,8 @@ var algrmMonitor = algrmMonitor || {};
 			this.$gpuProcessTable = $("#" + this.gpuProcessTableId + " tbody");
 			this.svgUtil = this.buildSVG(d3.select("#" + this.gpuUtilGraphSVGId), "Performance", [ this.strs.lineUtilTitle, this.strs.lineMemTitle ], 100);
 			this.svgX = this.buildSVG(d3.select("#" + this.gpuXGraphSVGId), "PCI", [this.strs.lineRxTitle, this.strs.lineTxTitle], 15);
+			this.gaugeTemp = null;
+			this.buildGauge("gaugeTemp", d3.select("#" + this.gpuTempGaugeId), "Temp", this.model.getGPUInfo().temperature, this.model.getGPUInfo().temperatureThreshold);
 		},
 		
 		buildProcessTable: function() {
@@ -251,6 +281,22 @@ var algrmMonitor = algrmMonitor || {};
 			this.updateSVGWithData(this.svgX, this.strs.lineTxTitle, data, this.svgX.x, this.svgX.y);
 		},
 
+		updateGaugeTemp: function() {
+			if (this.gaugeTemp) {
+				var data = google.visualization.arrayToDataTable([
+					['Label', 'Value'],
+					["Temp", this.model.gpuDetails.temperature]]);
+		  
+				  var options = {
+					width: 300, height: 90,
+					redFrom: this.model.gpuDetails.temperatureThreshold, redTo: 120,
+					minorTicks: 5
+				  };
+
+				this.gaugeTemp.draw(data, options);
+			}
+		},
+
 		updateOnlineStatus: function() {
 			if (this.model.onlineStatus) {
 				this.$gpuProcessPanel.removeClass("gpu-process-table-freeze");
@@ -275,6 +321,7 @@ var algrmMonitor = algrmMonitor || {};
 			this.updateMemGraph();
 			this.updateRxGraph();
 			this.updateTxGraph();
+			this.updateGaugeTemp();
 		}
 	};
 
