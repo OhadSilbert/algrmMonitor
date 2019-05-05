@@ -66,7 +66,6 @@ var algrmMonitor = algrmMonitor || {};
 			gpuPanelTitleId: "gpuPanelTitle_<id>",
 			gpuUtilGraphPanelId: "gpuUtilGraphPanel_<id>",
 			gpuXGraphPanelId: "gpuXGraphPanel_<id>",
-			gpuProcessPanelId: "gpuProcessPanel_<id>",
 			gpuProcessTableId: "gpuProcessTable_<id>",
 			gpuUtilGraphSVGId: "gpuUtilGraphSVG_<id>",
 			gpuTempGaugeId: "gpuTempGaugeId_<id>",
@@ -91,13 +90,20 @@ var algrmMonitor = algrmMonitor || {};
 								 <div id="<gpuXGraphPanelId>"  class="device-graph"> \
 								 <svg id="<gpuXGraphSVGId>" class="device-svg"></svg> \
 								 </div> \
-								 <div id="<gpuProcessPanelId>"  class="device-process"> \
-								 <table id="<gpuProcessTableId>" class="device-process-table">\
-								 <thead><tr><th>PID</th><th>Process</th><th>User</th><th>Mem Usage [MB]</th></tr></thead>\
-								 <tbody></tbody></table>\
+								 <div id="<gpuProcessTableId>"  class="device-process"> \
 								 </div>',
-			htmlProcessTableRow: '<tr><td><pid></td><td><cmd></td><td><username></td><td><mem></td></tr>',
 			urlTemplate: 'http://<computer>:<port>',
+		},
+
+		cssProcessTableClassNames: {
+			'headerRow': 'cssProcessHeaderRow',
+			'tableRow': 'cssProcessTableRow',
+			'oddTableRow': 'cssProcessOddTableRow',
+			'selectedTableRow': 'cssProcessSelectedTableRow',
+			'hoverTableRow': 'cssProcessHoverTableRow',
+			'headerCell': 'cssProcessHeaderCell',
+			'tableCell': 'cssProcessTableCell',
+			'rowNumberCell': 'cssProcessRowNumberCell'
 		},
 		
 		buildPanel: function() {
@@ -152,7 +158,7 @@ var algrmMonitor = algrmMonitor || {};
 			var panel = this;
 			google.charts.load('current', {'packages':['gauge']});
 			google.charts.setOnLoadCallback( function() {
-				chart = panel.buildGaugeCallback(member, gauge, title, val, valThreshold)
+				chart = panel.buildGaugeCallback(member, gauge, title, val, valThreshold);
 			});
 		},
 
@@ -177,7 +183,6 @@ var algrmMonitor = algrmMonitor || {};
 			this.gpuUtilGraphPanelId = this.strs.gpuUtilGraphPanelId.replace("<id>", this.model.id);
 			this.gpuTempGaugeId = this.strs.gpuTempGaugeId.replace("<id>", this.model.id);
 			this.gpuXGraphPanelId = this.strs.gpuXGraphPanelId.replace("<id>", this.model.id);
-			this.gpuProcessPanelId = this.strs.gpuProcessPanelId.replace("<id>", this.model.id);
 			this.gpuProcessTableId = this.strs.gpuProcessTableId.replace("<id>", this.model.id);
 			this.gpuUtilGraphSVGId = this.strs.gpuUtilGraphSVGId.replace("<id>", this.model.id);
 			this.gpuXGraphSVGId = this.strs.gpuXGraphSVGId.replace("<id>", this.model.id);
@@ -185,7 +190,6 @@ var algrmMonitor = algrmMonitor || {};
 				.replace("<gpuPanelTitleId>", this.gpuPanelTitleId)
 				.replace("<gpuUtilGraphPanelId>", this.gpuUtilGraphPanelId)
 				.replace("<gpuXGraphPanelId>", this.gpuXGraphPanelId)
-				.replace("<gpuProcessPanelId>", this.gpuProcessPanelId)
 				.replace("<gpuName>", this.model.getGPUInfo().gpuName)
 				.replace('<gpuIdx>', this.model.getGPUInfo().gpuIdx)
 				.replace("<gpuProcessTableId>", this.gpuProcessTableId)
@@ -195,31 +199,74 @@ var algrmMonitor = algrmMonitor || {};
 			this.$gpuPanel.html(html);
 			this.$gpuUtilGraphPanel = $("#" + this.gpuUtilGraphPanelId);
 			this.$gpuXGraphPanel = $("#" + this.gpuXGraphPanelId);
-			this.$gpuProcessPanel = $("#" + this.gpuProcessPanelId);
-			this.$gpuProcessTable = $("#" + this.gpuProcessTableId + " tbody");
+			this.$gpuProcessTable = $("#" + this.gpuProcessTableId);
 			this.svgUtil = this.buildSVG(d3.select("#" + this.gpuUtilGraphSVGId), "Performance", [ this.strs.lineUtilTitle, this.strs.lineMemTitle ], 100);
 			this.svgX = this.buildSVG(d3.select("#" + this.gpuXGraphSVGId), "PCI", [this.strs.lineRxTitle, this.strs.lineTxTitle], 15);
 			this.gaugeTemp = null;
+			this.oldProcessTablePids = null;
 			this.buildGauge("gaugeTemp", d3.select("#" + this.gpuTempGaugeId), "Temp", this.model.getGPUInfo().temperature, this.model.getGPUInfo().temperatureThreshold);
+		},
+
+		processTableWasUpdate: function() {
+			var oldPids = this.oldProcessTablePids;
+			var procs = this.model.getGPUDetails().procs;
+			var newPids = procs.map(x => x.pid);
+			newPids.sort();
+			this.oldProcessTablePids = newPids;
+			if (oldPids) {
+				if (newPids.length == oldPids.length) {
+					for (var i in newPids) {
+						if (newPids[i] != oldPids[i]) {
+							return true;
+						}
+					}
+				} else {
+					return true;
+				}
+			} else {
+				return true;
+			}
+			return false;
 		},
 		
 		buildProcessTable: function() {
+			var panel = this;
 			var gpuDetails = this.model.getGPUDetails();
-			var tablebody = "";
-			for (var i in this.model.gpuDetails.procs) {
-				var proc = this.model.getGPUDetails().procs[i];
-				var usedGpuMemoryPercent = 100*proc.usedGpuMemory/gpuDetails.memTotal;
-				var usedGpuMemory = proc.usedGpuMemory/1024/1024 + ' (' + usedGpuMemoryPercent.toFixed(0) + '%)';
-				if (proc.usedGpuMemory < 0) {
-					usedGpuMemory = "?";
-				}
-				tablebody += this.strs.htmlProcessTableRow
-					.replace('<pid>', proc.pid)
-					.replace('<cmd>', proc.cmd)
-					.replace('<username>', proc.username)
-					.replace('<mem>', usedGpuMemory);
+			if (this.processTableWasUpdate())
+			{
+				google.charts.load('current', {'packages':['table']});
+				google.charts.setOnLoadCallback(function() {
+					chart = panel.buildTableCallback(gpuDetails);
+				});	
 			}
-			this.$gpuProcessTable.html(tablebody);
+		},
+
+		buildTableCallback: function(gpuDetails) {
+			var options = {
+				showRowNumber: false,
+				width: '80%', 
+				cssClassNames: this.cssProcessTableClassNames
+		};
+
+			var data = new google.visualization.DataTable(); 
+				data.addColumn('number', 'PID');
+        data.addColumn('string', 'Process');
+				data.addColumn('string', 'User');
+				data.addColumn('number', 'Mem Usage [MB]');
+				
+				for (var i in gpuDetails.procs) {
+					var proc = gpuDetails.procs[i];
+					var usedGpuMemoryPercent = 100*proc.usedGpuMemory/gpuDetails.memTotal;
+					var usedGpuMemory = proc.usedGpuMemory/1024/1024 + ' (' + usedGpuMemoryPercent.toFixed(0) + '%)';
+					if (proc.usedGpuMemory < 0) {
+						usedGpuMemory = "?";
+					}
+					data.addRow([proc.pid, proc.cmd, proc.username, {v: proc.usedGpuMemory, f: usedGpuMemory}]);
+				}
+
+        var table = new google.visualization.Table( d3.select("#" + this.gpuProcessTableId)[0][0] );
+
+        table.draw(data, options);
 		},
 		
 		updateSVGWithData(svg, title, data, x, y) {
@@ -305,12 +352,6 @@ var algrmMonitor = algrmMonitor || {};
 		},
 
 		updateOnlineStatus: function() {
-			if (this.model.onlineStatus) {
-				this.$gpuProcessPanel.removeClass("gpu-process-table-freeze");
-			}
-			else {
-				this.$gpuProcessPanel.addClass("gpu-process-table-freeze");
-			}
 		},
 
 		/* -------------------- Handlers From Event Dispatcher ----------------- */

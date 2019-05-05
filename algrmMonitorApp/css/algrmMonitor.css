@@ -117,10 +117,11 @@ body::after {
 }
 
 .device-process {
-	max-height: 180px;
-	overflow-y: auto;
+	border-collapse: collapse;
+	height: 140px;
+	max-height: 140px;
 	display: flex;
-    align-items: center;
+    align-items: top;
     justify-content: center;
 }
 
@@ -145,43 +146,66 @@ body::after {
 	width: 300px;
 }
 
-.device-process-table {
-    border-collapse: collapse;
-	border: 1px solid #ddd;
-    width: 450px;
-}
-
-.device-process-table td, .device-process-table th {
-    padding: 8px;
-}
-
-.device-process-table tr {
-	background-color: white;
-}
-
-.device-process-table tr:hover {background-color: #f0f0f0;}
-
 thead {
 	border: 1px solid #ddd;
 }
 
-.device-process-table th {
+.table {
+	border-collapse: collapse;
+}
+
+.cssProcessTableRow {
 	font: bold;
     padding-top: 12px;
     padding-bottom: 12px;
-    text-align: left;
+    text-align: center;
+	background-color: white;
+}
+
+.cssProcessHeaderRow {
+	font: bold;
+    padding-top: 12px;
+    padding-bottom: 12px;
+    text-align: center;
     background-color: white;
 }
 
-.device-process-table-freeze th {
-    color: #e0e0e0;
+.cssProcessOddTableRow {
+	font: bold;
+    padding-top: 12px;
+    padding-bottom: 12px;
+    text-align: center;
+    background-color: white;
 }
 
-.device-process-table-freeze tr {
-    color: #e0e0e0;
+.cssProcessSelectedTableRow {
+	font: bold;
+    padding-top: 12px;
+    padding-bottom: 12px;
+    text-align: center;
+    background-color: white;
 }
 
-iframe {
-	width: 100%;
-	height: 100%;
+.cssProcessHoverTableRow {
+	font: bold;
+    padding-top: 12px;
+    padding-bottom: 12px;
+    text-align: center;
+    background-color: grey;
+}
+
+.cssProcessHeaderCell {
+	font: bold;
+    padding-top: 12px;
+    padding-bottom: 12px;
+    text-align: center;
+    background-color: white;
+}
+
+.cssProcessTableCell {
+	font: bold;
+    padding-top: 12px;
+    padding-bottom: 12px;
+    text-align: center;
+    background-color: white;
 }
