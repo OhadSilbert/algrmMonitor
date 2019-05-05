@@ -7,11 +7,13 @@ from collections import deque
 from py3nvml.py3nvml import *
 import copy
 import logging
-import os.path
+import os
 
 
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
+
+os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
 
 
 TIME_INTERVAL = 0.5
