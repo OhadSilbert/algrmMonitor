@@ -135,8 +135,8 @@ def main():
 def monitor_all():
     device_count = nvmlDeviceGetCount()
     ret = list()
-    ret.append({"cpuIdx": -1,
-                "cpuName": "CPU",
+    ret.append({"idx": -1,
+                "name": "CPU",
                 "ncores": psutil.cpu_count(),
                 "memTotal": psutil.virtual_memory().total})
     for i in range(device_count):
@@ -145,9 +145,9 @@ def monitor_all():
         mem_info = nvmlDeviceGetMemoryInfo(handle)
         temperature = nvmlDeviceGetTemperature(handle, 0)
         temperatureThreshold = nvmlDeviceGetTemperatureThreshold(handle, 0)
-        ret.append({"gpuIdx": i,
-                    "gpuId": pci_info.busId.decode("utf-8"),
-                    "gpuName": nvmlDeviceGetName(handle),
+        ret.append({"idx": i,
+                    "id": pci_info.busId.decode("utf-8"),
+                    "name": nvmlDeviceGetName(handle),
                     "memTotal": mem_info.total,
                     "temperature": temperature,
                     "temperatureThreshold": temperatureThreshold})
@@ -184,15 +184,15 @@ def add_cpu_history_to_json(jsn, history, ltime):
     return jsn
 
 
-def monitor_device(gpu_idx, ltime):
-    if type(gpu_idx) is not int:
+def monitor_device(idx, ltime):
+    if type(idx) is not int:
         raise TypeError("gpu_idx type error")
-    elif gpu_idx < -1:
+    elif idx < -1:
         raise ValueError("gou_idx should be either -1 or non-negative")
-    elif gpu_idx == -1:
+    elif idx == -1:
         return monitor_computer(ltime)
     else:
-        return monitor_gpu(gpu_idx, ltime)
+        return monitor_gpu(idx, ltime)
 
 
 def monitor_computer(ltime):
@@ -261,14 +261,14 @@ def monitor_gpu(gpu_idx, ltime):
     pass
 
 
-@app.route('/monitor/GPUs', methods=['GET', 'POST'])
-def monitor_gpus():
-    gpu_idx = request.args.get('gpuIdx', default=-999, type=int)
+@app.route('/monitor/Devices', methods=['GET', 'POST'])
+def monitor_devices():
+    idx = request.args.get('idx', default=-999, type=int)
     ltime = request.args.get('lTime', default=0, type=float)
-    if gpu_idx == -999:
+    if idx == -999:
         return monitor_all()
     else:
-        return monitor_device(gpu_idx, ltime)
+        return monitor_device(idx, ltime)
     pass
 
 

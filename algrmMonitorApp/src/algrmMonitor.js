@@ -1,7 +1,7 @@
 var algrmMonitor = algrmMonitor || {};
 
 (function() {
-	var algrmServerURL = "/monitor/GPUs";
+	var algrmServerURL = "/monitor/Devices";
 	
 	$(document).ready(function() { algrmMonitor.buildAlgrmDashboard(); });
 
@@ -14,20 +14,20 @@ var algrmMonitor = algrmMonitor || {};
 		var cpu = null;
 		for (var i in devices) {
 			var device = devices[i];
-			if (device.hasOwnProperty("gpuIdx")) {
+			if ( device.idx >= 0 ) {
 				gpus.push(device);
 				var panelModel = new algrmMonitor.gpuPanelModel();
 				var panelView = new algrmMonitor.gpuPanelView(panelModel);
-				var panelController = new algrmMonitor.gpuPanelController(panelModel, panelView);
+				var panelController = new algrmMonitor.panelController(panelModel, panelView);
 				var panelMVC = {"model": panelModel, "view": panelView, "controller": panelController};
-			        panels.push(panelMVC);
+			    panels.push(panelMVC);
 			} else {
 				cpu = device;
 				var panelModel = new algrmMonitor.cpuPanelModel();
 				var panelView = new algrmMonitor.cpuPanelView(panelModel);
-				var panelController = new algrmMonitor.cpuPanelController(panelModel, panelView);
+				var panelController = new algrmMonitor.panelController(panelModel, panelView);
 				var panelMVC = {"model": panelModel, "view": panelView, "controller": panelController};
-			        cpuPanel = panelMVC;
+			    cpuPanel = panelMVC;
 			}
 		}
 
@@ -37,18 +37,18 @@ var algrmMonitor = algrmMonitor || {};
 			panels[i].controller.newPanel(i);
 		}
 		
-		// update each panel with the gpu info
-		cpuPanel.controller.updateCPUInfo(cpu);
+		// update each panel with the device info
+		cpuPanel.controller.updateInfo(cpu);
 		for (var i in panels) {
-			panels[i].controller.updateGPUInfo(gpus[i]);
+			panels[i].controller.updateInfo(gpus[i]);
 		}
 		
-		// update gpu data in panels every seconds
-		// notice that updateGPUDetails return a promise if you need to use it. 
+		// update device data in panels every seconds
+		// notice that updateDetails return a promise if you need to use it. 
 		setInterval(function() {
-			cpuPanel.controller.updateCPUDetails(algrmServerURL);
+			cpuPanel.controller.updateDetails(algrmServerURL);
 			for (var i in panels) {
-				panels[i].controller.updateGPUDetails(algrmServerURL);
+				panels[i].controller.updateDetails(algrmServerURL);
 			}
 		}, 1000);
 

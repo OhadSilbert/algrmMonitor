@@ -62,366 +62,198 @@ var algrmMonitor = algrmMonitor || {};
 		return true;
 	
 	};
-
-	/* *******************************************************
-	 * This code was inspired from:
-	 * https://www.awwwards.com/build-a-simple-javascript-app-the-mvc-way.html
-	 */
-	 
+ 
 	/* ================================================================= */	 
 	/* 
 	 *                           gpuPanelView
 	 */
 	algrmMonitor.gpuPanelView = function (model) {
-		this.model = model;
-		
-		// here should be event dispachers for events coming from the view
-
-		this.init();
+		algrmMonitor.panelView.call(this, model);
 	};
 
-	algrmMonitor.gpuPanelView.prototype = {
-		init: function () {
-			this.createChildren()
-			    .setupHandlers()
-				.enable();
-		},
+	algrmMonitor.gpuPanelView.prototype = Object.create(algrmMonitor.panelView.prototype);
+	algrmMonitor.gpuPanelView.prototype.constructor = algrmMonitor.gpuPanelView;
+
+	algrmMonitor.gpuPanelView.prototype.createChildren = function() {
+		algrmMonitor.panelView.prototype.createChildren.call(this);
+		this.$gpuXGraphPanel = null;
+		this.$gpuProcessPanel = null;
+		return this;
+	};
+
+	algrmMonitor.gpuPanelView.prototype.gpuStrs = {
+		gpuPanelTitleId: "gpuPanelTitle_<id>",
+		gpuXGraphPanelId: "gpuXGraphPanel_<id>",
+		gpuProcessTableId: "gpuProcessTable_<id>",
+		gpuTempGaugeId: "gpuTempGaugeId_<id>",
+		gpuXGraphSVGId: "gpuXGraphSVG_<id>",
+		lineRxTitle: "rx",
+		lineTxTitle: "tx",
+		htmlDeviceSpecificTitle: '<div class="gpu-title-box"> \
+                                  <div class="gpu-title-chart"> \
+                                  <div id="<gpuTempGaugeId>" class="gpu-gauge"></div> \
+                                  </div> \
+                                  <div class="gpu-title-text"> \
+                                  <h1 id="<gpuPanelTitleId>" class="device-title"><gpuName> (<gpuIdx>)</h1> \
+                                  </div>\
+                                  <div class="gpu-title-chart"> </div> \
+                                  </div>',
+        htmlDeviceSpecificDashboard: '<div id="<gpuXGraphPanelId>"  class="device-graph"> \
+                                      <svg id="<gpuXGraphSVGId>" class="device-svg"></svg> \
+                                      </div> \
+                                      <div id="<gpuProcessTableId>"  class="device-process"> \
+                                      </div>'
+	};
+
+	algrmMonitor.gpuPanelView.prototype.cssProcessTableClassNames = {
+		'headerRow': 'cssProcessHeaderRow',
+		'tableRow': 'cssProcessTableRow',
+		'oddTableRow': 'cssProcessOddTableRow',
+		'selectedTableRow': 'cssProcessSelectedTableRow',
+		'hoverTableRow': 'cssProcessHoverTableRow',
+		'headerCell': 'cssProcessHeaderCell',
+		'tableCell': 'cssProcessTableCell',
+		'rowNumberCell': 'cssProcessRowNumberCell'
+	};
+
+	algrmMonitor.gpuPanelView.prototype.getHtmlDeviceSpecificTitle = function() {
+		this.gpuTempGaugeId = this.gpuStrs.gpuTempGaugeId.replace("<id>", this.model.id);
+		this.gpuPanelTitleId = this.gpuStrs.gpuPanelTitleId.replace("<id>", this.model.id);
+		var htmlDeviceSpecificTitle = this.gpuStrs.htmlDeviceSpecificTitle
+			.replace("<gpuTempGaugeId>", this.gpuTempGaugeId)
+			.replace("<gpuPanelTitleId>", this.gpuPanelTitleId)
+			.replace("<gpuName>",  this.model.getInfo().name)
+			.replace("<gpuIdx>", this.model.getInfo().idx);
+		return htmlDeviceSpecificTitle;
+	};
+
+	algrmMonitor.gpuPanelView.prototype.getHtmlDeviceSpecificDashboard = function() {
+		this.gpuXGraphPanelId = this.gpuStrs.gpuXGraphPanelId.replace("<id>", this.model.id);
+		this.gpuXGraphSVGId = this.gpuStrs.gpuXGraphSVGId.replace("<id>", this.model.id);
+		this.gpuProcessTableId = this.gpuStrs.gpuProcessTableId.replace("<id>", this.model.id);
+		var htmlDeviceSpecificDashboard = this.gpuStrs.htmlDeviceSpecificDashboard
+			.replace("<gpuXGraphPanelId>", this.gpuXGraphPanelId)
+			.replace("<gpuXGraphSVGId>", this.gpuXGraphSVGId)
+			.replace("<gpuProcessTableId>", this.gpuProcessTableId);
+		return htmlDeviceSpecificDashboard;
+	};
+
+	algrmMonitor.gpuPanelView.prototype.cachePanelSpecificStructure = function() {
+		// cache DOM elements
+		this.$gpuXGraphPanel = $("#" + this.gpuXGraphPanelId);
+		this.$gpuProcessTable = $("#" + this.gpuProcessTableId);
+		this.svgX = this.buildSVG(d3.select("#" + this.gpuXGraphSVGId), "PCI", [this.strs.lineRxTitle, this.strs.lineTxTitle], 15);
+		this.gaugeTemp = null;
+		this.oldProcessTableProcs = null;
+		this.buildGauge("gaugeTemp", d3.select("#" + this.gpuTempGaugeId), "Temp", this.model.getInfo().temperature, this.model.getInfo().temperatureThreshold);
+	};
+
+	algrmMonitor.gpuPanelView.prototype.buildGauge = function(member, gauge, title, val, valThreshold) {
+		var panel = this;
+		google.charts.load('current', {'packages':['gauge']});
+		google.charts.setOnLoadCallback( function() {
+			chart = panel.buildGaugeCallback(member, gauge, title, val, valThreshold);
+		});
+	};
+
+	algrmMonitor.gpuPanelView.prototype.buildGaugeCallback = function(member, gauge, title, val, valThreshold) {
+		var data = google.visualization.arrayToDataTable([
+			['Label', 'Value'],
+			[title, val]]);
+	
+			var options = {
+			width: 300, height: 90,
+			redFrom: valThreshold, redTo: 120,
+			minorTicks: 5
+			};
 		
-		createChildren: function () {
-			// cache the document object
-			this.$gpuPanel = null;
-			this.$gpuUtilGraphPanel = null;
-			this.$gpuXGraphPanel = null;
-			this.$gpuProcessPanel = null;
-			return this;
-		},
+		this[member] = new google.visualization.Gauge(gauge[0][0]);
 
+		this[member].draw(data, options);
+	};
 
-		setupHandlers: function () {
-			this.newPanelHandler = this.newPanel.bind(this);
-			this.updateGPUInfoHandler = this.updateGPUInfo.bind(this);
-			this.updateGPUDetailsHandler = this.updateGPUDetails.bind(this);
-			this.updateOnlineStatusHandler = this.updateOnlineStatus.bind(this);
-
-			/**
-			Handlers from Event Dispatcher
-			*/
-
-			return this;
-		},
-
-		enable: function () {
-			this.model.newPanelEvent.attach(this.newPanelHandler);
-			this.model.updateGPUInfoEvent.attach(this.updateGPUInfoHandler);
-			this.model.updateGPUDetailsEvent.attach(this.updateGPUDetailsHandler);
-			this.model.updateOnlineStatusEvent.attach(this.updateOnlineStatusHandler);
-
-			/**
-			 * Event Dispatcher
-			 */
-
-			return this;
-		},
-		
-		strs: {
-			gpuPanelId: "gpuPanel_<id>",
-			gpuPanelTitleId: "gpuPanelTitle_<id>",
-			gpuUtilGraphPanelId: "gpuUtilGraphPanel_<id>",
-			gpuXGraphPanelId: "gpuXGraphPanel_<id>",
-			gpuProcessTableId: "gpuProcessTable_<id>",
-			gpuUtilGraphSVGId: "gpuUtilGraphSVG_<id>",
-			gpuTempGaugeId: "gpuTempGaugeId_<id>",
-			gpuXGraphSVGId: "gpuXGraphSVG_<id>",
-			lineUtilTitle: "Util",
-			lineMemTitle: "Mem",
-			lineRxTitle: "rx",
-			lineTxTitle: "tx",
-			htmlPanel: '<div id="<gpuPanelId>" class="device-panel"></div>',
-			htmlPanelStructure: '<div class="gpu-title-box"> \
-			                     <div class="gpu-title-chart"> \
-								 <div id="<gpuTempGaugeId>" class="gpu-gauge"></div> \
-								 </div> \
-								 <div class="gpu-title-text"> \
-								 <h1 id="<gpuPanelTitleId>" class="device-title"><gpuName> (<gpuIdx>)</h1> \
-								 </div> \
-								 <div class="gpu-title-chart"> </div> \
-								 </div> \
-								 <div id="<gpuUtilGraphPanelId>"  class="device-graph"> \
-								 <svg id="<gpuUtilGraphSVGId>" class="device-svg"></svg> \
-								 </div> \
-								 <div id="<gpuXGraphPanelId>"  class="device-graph"> \
-								 <svg id="<gpuXGraphSVGId>" class="device-svg"></svg> \
-								 </div> \
-								 <div id="<gpuProcessTableId>"  class="device-process"> \
-								 </div>',
-			urlTemplate: 'http://<computer>:<port>',
-		},
-
-		cssProcessTableClassNames: {
-			'headerRow': 'cssProcessHeaderRow',
-			'tableRow': 'cssProcessTableRow',
-			'oddTableRow': 'cssProcessOddTableRow',
-			'selectedTableRow': 'cssProcessSelectedTableRow',
-			'hoverTableRow': 'cssProcessHoverTableRow',
-			'headerCell': 'cssProcessHeaderCell',
-			'tableCell': 'cssProcessTableCell',
-			'rowNumberCell': 'cssProcessRowNumberCell'
-		},
-		
-		buildPanel: function() {
-			this.gpuPanelId = this.strs.gpuPanelId.replace("<id>", this.model.id);
-			if (!this.$gpuPanel) {
-				var html = this.strs.htmlPanel.replace("<gpuPanelId>", this.gpuPanelId);
-				$("#algrmDashboard").append(html);
-				this.$gpuPanel = $("#" + this.gpuPanelId);
-			}
-			else {
-				this.$gpuPanel.empty();
-			}
-		},
-		
-		title2Id: function(title) {
-			return title + "_" + this.model.id;
-		},
-		
-		buildSVG: function(svg, title, lineTitles, yMax) {
-			var margin = {top: 30, right: 40, bottom: 30, left: 50};
-			var width = 450 - margin.left - margin.right;
-			var height = 150 - margin.top - margin.bottom;
-			var x = d3.scale.linear().range([0, width]);
-			var y = d3.scale.linear().range([height, 0]);
-			x.domain([-60, 0]);
-			y.domain([0, yMax]);
-			var xAxis = d3.svg.axis().scale(x)
-									 .orient("bottom").ticks(5);
-			var yAxis = d3.svg.axis().scale(y)
-									 .orient("left").ticks(5);
-			svg = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-			svg.append("text").attr("class", "graph-title")
-							  .attr("x", (width / 2))
-							  .attr("y", 0 - (margin.top / 2))
-							  .text(title);
-			for (var i in lineTitles) {
-				svg.append("path").attr("class", "line-" + i).attr("id", this.title2Id(lineTitles[i]));
-				svg.append("text").attr("class", "text-line-" + i).attr("id", "text" + this.title2Id(lineTitles[i]))
-								  .attr("x", (width + margin.right - 5))
-								  .attr("y", height / 2 - 8 + i * 16)
-								  .attr("text-anchor", "end")
-								  .text(lineTitles[i]);
-			}
-			svg.append("g").attr("class", "x axis").attr("transform", "translate(0," + height + ")").call(xAxis);
-			svg.append("g").attr("class", "y axis").call(yAxis);
-			svg.x = x;
-			svg.y = y;
-			return svg;
-		},
-
-		buildGauge: function(member, gauge, title, val, valThreshold) {
-			var panel = this;
-			google.charts.load('current', {'packages':['gauge']});
-			google.charts.setOnLoadCallback( function() {
-				chart = panel.buildGaugeCallback(member, gauge, title, val, valThreshold);
-			});
-		},
-
-		buildGaugeCallback: function(member, gauge, title, val, valThreshold) {
+	algrmMonitor.gpuPanelView.prototype.updateGaugeTemp = function() {
+		if (this.gaugeTemp) {
 			var data = google.visualization.arrayToDataTable([
 				['Label', 'Value'],
-				[title, val]]);
-	  
-			  var options = {
+				["Temp", this.model.getDetails().temperature]]);
+		
+				var options = {
 				width: 300, height: 90,
-				redFrom: valThreshold, redTo: 120,
+				redFrom: this.model.getDetails().temperatureThreshold, redTo: 120,
 				minorTicks: 5
-			  };
-			
-			this[member] = new google.visualization.Gauge(gauge[0][0]);
+				};
 
-			this[member].draw(data, options);
-		},
-		
-		buildPanelStructure: function() {
-			this.gpuPanelTitleId = this.strs.gpuPanelTitleId.replace("<id>", this.model.id);
-			this.gpuUtilGraphPanelId = this.strs.gpuUtilGraphPanelId.replace("<id>", this.model.id);
-			this.gpuTempGaugeId = this.strs.gpuTempGaugeId.replace("<id>", this.model.id);
-			this.gpuXGraphPanelId = this.strs.gpuXGraphPanelId.replace("<id>", this.model.id);
-			this.gpuProcessTableId = this.strs.gpuProcessTableId.replace("<id>", this.model.id);
-			this.gpuUtilGraphSVGId = this.strs.gpuUtilGraphSVGId.replace("<id>", this.model.id);
-			this.gpuXGraphSVGId = this.strs.gpuXGraphSVGId.replace("<id>", this.model.id);
-			var html = this.strs.htmlPanelStructure
-				.replace("<gpuPanelTitleId>", this.gpuPanelTitleId)
-				.replace("<gpuUtilGraphPanelId>", this.gpuUtilGraphPanelId)
-				.replace("<gpuXGraphPanelId>", this.gpuXGraphPanelId)
-				.replace("<gpuName>", this.model.getGPUInfo().gpuName)
-				.replace('<gpuIdx>', this.model.getGPUInfo().gpuIdx)
-				.replace("<gpuProcessTableId>", this.gpuProcessTableId)
-				.replace("<gpuUtilGraphSVGId>", this.gpuUtilGraphSVGId)
-				.replace("<gpuXGraphSVGId>", this.gpuXGraphSVGId)
-				.replace("<gpuTempGaugeId>", this.gpuTempGaugeId);
-			this.$gpuPanel.html(html);
-			this.$gpuUtilGraphPanel = $("#" + this.gpuUtilGraphPanelId);
-			this.$gpuXGraphPanel = $("#" + this.gpuXGraphPanelId);
-			this.$gpuProcessTable = $("#" + this.gpuProcessTableId);
-			this.svgUtil = this.buildSVG(d3.select("#" + this.gpuUtilGraphSVGId), "Performance", [ this.strs.lineUtilTitle, this.strs.lineMemTitle ], 100);
-			this.svgX = this.buildSVG(d3.select("#" + this.gpuXGraphSVGId), "PCI", [this.strs.lineRxTitle, this.strs.lineTxTitle], 15);
-			this.gaugeTemp = null;
-			this.oldProcessTableProcs = null;
-			this.buildGauge("gaugeTemp", d3.select("#" + this.gpuTempGaugeId), "Temp", this.model.getGPUInfo().temperature, this.model.getGPUInfo().temperatureThreshold);
-		},
-
-		processTableWasUpdate: function() {
-			var oldProcs = this.oldProcessTableProcs;
-			var procs = this.model.getGPUDetails().procs;
-			procs.sort(function(a, b) { return a.pid - b.pid; });
-			this.oldProcessTableProcs = procs;
-			if (oldProcs) {
-				return isEqual(oldProcs, procs);
-			} 
-			return true;
-		},
-		
-		buildProcessTable: function() {
-			var panel = this;
-			var gpuDetails = this.model.getGPUDetails();
-			if (this.processTableWasUpdate())
-			{
-				google.charts.load('current', {'packages':['table']});
-				google.charts.setOnLoadCallback(function() {
-					chart = panel.buildTableCallback(gpuDetails);
-				});	
-			}
-		},
-
-		buildTableCallback: function(gpuDetails) {
-			var options = {
-				showRowNumber: false,
-				width: '80%', 
-				cssClassNames: this.cssProcessTableClassNames
-		};
-
-			var data = new google.visualization.DataTable(); 
-				data.addColumn('number', 'PID');
-        data.addColumn('string', 'Process');
-				data.addColumn('string', 'User');
-				data.addColumn('number', 'Mem Usage [MB]');
-				
-				for (var i in gpuDetails.procs) {
-					var proc = gpuDetails.procs[i];
-					var usedGpuMemoryPercent = 100*proc.usedGpuMemory/gpuDetails.memTotal;
-					var usedGpuMemory = proc.usedGpuMemory/1024/1024 + ' (' + usedGpuMemoryPercent.toFixed(0) + '%)';
-					if (proc.usedGpuMemory < 0) {
-						usedGpuMemory = "?";
-					}
-					data.addRow([proc.pid, proc.cmd, proc.username, {v: proc.usedGpuMemory, f: usedGpuMemory}]);
-				}
-
-        var table = new google.visualization.Table( d3.select("#" + this.gpuProcessTableId)[0][0] );
-
-        table.draw(data, options);
-		},
-		
-		updateSVGWithData(svg, title, data, x, y) {
-			var id = this.title2Id(title);
-			var valueline = d3.svg.line().x(function(d) { return x(d[0]); }).y(function(d) { return y(d[1]); });
-			svg.select("#" + id).attr("d", valueline(data));
-		},
-		
-		updateUtilGraph: function() {
-			var gtime = this.model.gpuDetails.graph_time;
-			var gutil = this.model.gpuDetails.graph_util;
-			var n = gtime.length;
-			var end_time = gtime[n - 1];
-			var data = [];
-			for (var i = 0; i < n; i++) {
-				var ltime = gtime[i] - end_time;
-				if (ltime > -60) {
-					data.push([ltime, gutil[i]]);
-				}
-			}
-			this.updateSVGWithData(this.svgUtil, this.strs.lineUtilTitle, data, this.svgUtil.x, this.svgUtil.y);
-		},
-
-		updateMemGraph: function() {
-			var gtime = this.model.gpuDetails.graph_time;
-			var gmem = this.model.gpuDetails.graph_mem;
-			var n = gtime.length;
-			var end_time = gtime[n - 1];
-			var data = [];
-			for (var i = 0; i < n; i++) {
-				var ltime = gtime[i] - end_time;
-				if (ltime > -60) {
-					data.push([ltime, gmem[i]]);
-				}
-			}
-			this.updateSVGWithData(this.svgUtil, this.strs.lineMemTitle, data, this.svgUtil.x, this.svgUtil.y);
-		},
-		
-		updateRxGraph: function() {
-			var gtime = this.model.gpuDetails.graph_time;
-			var grx = this.model.gpuDetails.graph_rx;
-			var n = gtime.length;
-			var end_time = gtime[n - 1];
-			var data = [];
-			for (var i = 0; i < n; i++) {
-				var ltime = gtime[i] - end_time;
-				if (ltime > -60) {
-					data.push([ltime, grx[i]]);
-				}
-			}
-			this.updateSVGWithData(this.svgX, this.strs.lineRxTitle, data, this.svgX.x, this.svgX.y);
-		},
-		
-		updateTxGraph: function() {
-			var gtime = this.model.gpuDetails.graph_time;
-			var gtx = this.model.gpuDetails.graph_tx;
-			var n = gtime.length;
-			var end_time = gtime[n - 1];
-			var data = [];
-			for (var i = 0; i < n; i++) {
-				var ltime = gtime[i] - end_time;
-				if (ltime > -60) {
-					data.push([ltime, gtx[i]]);
-				}
-			}
-			this.updateSVGWithData(this.svgX, this.strs.lineTxTitle, data, this.svgX.x, this.svgX.y);
-		},
-
-		updateGaugeTemp: function() {
-			if (this.gaugeTemp) {
-				var data = google.visualization.arrayToDataTable([
-					['Label', 'Value'],
-					["Temp", this.model.gpuDetails.temperature]]);
-		  
-				  var options = {
-					width: 300, height: 90,
-					redFrom: this.model.gpuDetails.temperatureThreshold, redTo: 120,
-					minorTicks: 5
-				  };
-
-				this.gaugeTemp.draw(data, options);
-			}
-		},
-
-		updateOnlineStatus: function() {
-		},
-
-		/* -------------------- Handlers From Event Dispatcher ----------------- */
-		newPanel: function() {
-			this.buildPanel();
-		},
-		
-		updateGPUInfo: function() {
-			this.buildPanelStructure();
-		},
-		
-		updateGPUDetails: function() {
-			this.buildProcessTable();
-			this.updateUtilGraph();
-			this.updateMemGraph();
-			this.updateRxGraph();
-			this.updateTxGraph();
-			this.updateGaugeTemp();
+			this.gaugeTemp.draw(data, options);
 		}
 	};
 
+	algrmMonitor.gpuPanelView.prototype.processTableWasUpdate = function() {
+		var oldProcs = this.oldProcessTableProcs;
+		var procs = this.model.getDetails().procs;
+		procs.sort(function(a, b) { return a.pid - b.pid; });
+		this.oldProcessTableProcs = procs;
+		if (oldProcs) {
+			return isEqual(oldProcs, procs);
+		} 
+		return true;
+	};
+
+	algrmMonitor.gpuPanelView.prototype.buildProcessTable = function() {
+		var panel = this;
+		var gpuDetails = this.model.getDetails();
+		if (this.processTableWasUpdate())
+		{
+			google.charts.load('current', {'packages':['table']});
+			google.charts.setOnLoadCallback(function() {
+				chart = panel.buildTableCallback(gpuDetails);
+			});	
+		}
+	};
+
+	algrmMonitor.gpuPanelView.prototype.buildTableCallback = function(gpuDetails) {
+		var options = {
+			showRowNumber: false,
+			width: '80%', 
+			cssClassNames: this.cssProcessTableClassNames
+		};
+
+		var data = new google.visualization.DataTable(); 
+			data.addColumn('number', 'PID');
+			data.addColumn('string', 'Process');
+			data.addColumn('string', 'User');
+			data.addColumn('number', 'Mem Usage [MB]');
+			
+			for (var i in gpuDetails.procs) {
+				var proc = gpuDetails.procs[i];
+				var usedGpuMemoryPercent = 100*proc.usedGpuMemory/gpuDetails.memTotal;
+				var usedGpuMemory = proc.usedGpuMemory/1024/1024 + ' (' + usedGpuMemoryPercent.toFixed(0) + '%)';
+				if (proc.usedGpuMemory < 0) {
+					usedGpuMemory = "?";
+				}
+				data.addRow([proc.pid, proc.cmd, proc.username, {v: proc.usedGpuMemory, f: usedGpuMemory}]);
+			}
+
+			var table = new google.visualization.Table( d3.select("#" + this.gpuProcessTableId)[0][0] );
+
+			table.draw(data, options);
+	};
+
+	algrmMonitor.gpuPanelView.prototype.updateRxGraph = function() {
+		this.updateGraph(this.svgX, this.gpuStrs.lineRxTitle,
+			this.model.details.graph_time, this.model.details.graph_rx, -60);
+	};
+	
+	algrmMonitor.gpuPanelView.prototype.updateTxGraph = function() {
+		this.updateGraph(this.svgX, this.gpuStrs.lineTxTitle,
+			this.model.details.graph_time, this.model.details.graph_tx, -60);
+	};
+
+	algrmMonitor.gpuPanelView.prototype.updateDetails = function() {
+		algrmMonitor.panelView.prototype.updateDetails.call(this);
+		this.buildProcessTable();
+		this.updateRxGraph();
+		this.updateTxGraph();
+		this.updateGaugeTemp();
+	};
 })();
