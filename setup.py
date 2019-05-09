@@ -6,7 +6,7 @@ import glob
 
 setup(
     name='algrmMonitor',
-    version="0.1.1",
+    version="1.0.0",
     packages=['algrmMonitor', 'algrmMonitorApp'],
     url='',
     license='MIT',
